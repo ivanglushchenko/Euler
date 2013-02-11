@@ -340,10 +340,24 @@ let problem14 () =
     let test = getSeqLength 13L
     seq { for n in 1L..999999L -> getSeqLength n } |> Seq.max |> snd
 
+let problem15 () =
+    let n = 21
+    
+    let grid = [| for i in 1..n -> [| for j in 1..n -> 0L |] |]
+    grid.[0].[0] <- 1L
+    for layer in 2..n * 2 - 1 do
+        let layerSize = if layer > n then 2 * n - layer else layer
+        for l in 1..layerSize do
+            let i = if layer > n then n - l else layer - l
+            let j = if layer > n then layer - n + l - 1 else l - 1
+            if i > 0 then grid.[i].[j] <- grid.[i].[j] + grid.[i - 1].[j]
+            if j > 0 then grid.[i].[j] <- grid.[i].[j] + grid.[i].[j - 1]
+    grid.[n - 1].[n - 1]
+
 [<EntryPoint>]
 let main argv = 
     swStart ()
-    let r = problem14 ()
+    let r = problem15 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Console.ReadLine() |> ignore
