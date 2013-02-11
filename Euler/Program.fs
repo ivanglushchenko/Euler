@@ -1,33 +1,4 @@
-﻿// Learn more about F# at http://fsharp.net
-// See the 'F# Tutorial' project for more help.
-let stopwatch = new System.Diagnostics.Stopwatch()
-let swStart () = stopwatch.Start()
-let swStop () = 
-    stopwatch.Stop()
-    stopwatch.ElapsedMilliseconds
-
-let getNextPrimesRange rangeFrom rangeTo primes =
-    let (rangeFrom, primes) = if rangeFrom < 3L then (3L, [ 2L ]) else ((if rangeFrom % 2L = 0L then rangeFrom + 1L else rangeFrom), primes)
-    let candidates = 
-        [|  for x in rangeFrom..2L..(rangeTo) do
-                if primes |> List.forall (fun prime -> x % prime <> 0L) then yield x |]
-    let rec sieve all primes =
-        if Array.isEmpty all then primes
-        else 
-            let nextPrime = all.[0]
-            sieve (all |> Array.filter (fun n -> n % nextPrime <> 0L)) (nextPrime :: primes)
-    sieve candidates primes
-
-let getPrimes target f =
-    getNextPrimesRange 3L target [2L] |> List.filter f
-
-let getAllPrimes target = getPrimes target (fun n -> true)
-
-let rec gcd a b = if b = 0L then abs a else gcd b (a % b)
-
-let getFactors target =
-    let targetsr = int64(sqrt (float target))
-    getPrimes targetsr (fun n -> target % (int64(n)) = 0L)
+﻿open Helpers
 
 let problem1 () =
     seq { for n in 1..999 do if n % 3 = 0 || n % 5 = 0 then yield n } |> Seq.sum
@@ -206,7 +177,6 @@ let problem12 () =
                     factorsProduct <- factorsProduct * (if prime = 2L then primeDegree else primeDegree + 1L)
             factorsProduct
 
-    let test = [| for x in 1..45 do if 45 % x = 0 then yield x |]
     let rec checkNext (n, factorsProduct) = 
         let nextn = n + 1L
         let nextFactorsProduct = getFactorsSum nextn
@@ -347,7 +317,7 @@ let problem15 () =
     grid.[n - 1].[n - 1]
 
 let problem16 () = 
-    System.Numerics.BigInteger.Pow(bigint(2), 1000).ToString() |> Seq.map (fun c -> System.Int32.Parse(c.ToString())) |> Seq.sum
+    System.Numerics.BigInteger.Pow(bigint(2), 1000).ToString() |> Seq.map toInt |> Seq.sum
 
 let problem17 () =
     let digitToString n = 
@@ -405,7 +375,7 @@ let problem17 () =
     numbers |> Array.map (fun n -> n |> Seq.filter (fun c -> System.Char.IsLetter c) |> Seq.length) |> Array.sum
 
 let problem18 () = 
-    let lines = System.IO.File.ReadAllLines "P18Input.txt" |> Array.map (fun s -> s.Split ' ' |> Array.map (fun t -> System.Int64.Parse t))
+    let lines = getLines "P18Input.txt" |> Array.map (fun s -> s.Split ' ' |> Array.map (fun t -> System.Int64.Parse t))
     let n = lines.Length
     let grid = [| for i in 1..n -> [| for j in 1..n -> 0L |] |]
     grid.[0].[0] <- lines.[0].[0]
@@ -424,10 +394,65 @@ let problem19 () =
         else loop (dt.AddMonths 1) acc
     loop startDate 0
 
+let problem20 () =
+    let rec facRec (n: bigint) c =
+        if c <= 1 then n
+        else facRec (System.Numerics.BigInteger.Multiply(n, bigint(c))) (c - 1)
+    let fac (n: int) = facRec (bigint(n)) (n - 1)
+    (fac 100).ToString() |> Seq.map toInt |> Seq.sum
+
+let problem21 () = 
+    let primes = getAllPrimes 10000L |> List.rev |> List.toArray
+    let getPrimeDivisors n primes =
+        let mutable remainder = n
+        let mutable primeIndex = 0
+        let mutable divisors = []
+        while remainder > 1L && primeIndex < (primes |> Array.length) && primes.[primeIndex] <= n do
+            let prime = primes.[primeIndex]
+            let mutable primeDegree = 0L
+            while remainder % prime = 0L do
+                primeDegree <- primeDegree + 1L
+                remainder <- remainder / prime
+                
+            if primeDegree > 0L then
+                divisors <- (prime, primeDegree) :: divisors
+            primeIndex <- primeIndex + 1
+        divisors
+    let getProperDivisors list = 
+        let rec loop list = 
+            match list with
+            | (a, b) :: hd :: tl ->
+                let divisors = [ for x in 0L..b -> (if x = 0L then 1L else (x * a)) ]
+                let rest = loop (hd :: tl)
+                seq { for x in divisors do
+                        for y in rest do
+                            yield x * y } |> Seq.toList
+            | (a, b) :: [] -> [ for x in 0L..b -> (if x = 0L then 1L else (x * a)) ]
+            | _            -> []
+        loop list
+    let getProperDivisorsSum n = (getPrimeDivisors n primes |> getProperDivisors |> Seq.sum) - n
+    let map = [ for x in 1L..9999L -> (x, getProperDivisorsSum x) ] |> Map.ofList
+    let amicableNumbers = map |> Map.toSeq |> Seq.filter (fun (x, y) -> map.ContainsKey y && map.[y] = x)
+    (amicableNumbers |> Seq.map (fun (x, y) -> x + y) |> Seq.sum) / 2L
+
+let problem22 () = 
+    let names = 
+        getLines "P22Input.txt" 
+        |> Array.collect (fun l -> l.Split ',') 
+        |> Array.sort
+        |> Array.map (fun n -> n.Trim '"' |> Seq.toList)
+    let getNameScore s =
+        let rec loop (s: char list) acc = 
+            match s with
+            | hd :: tl -> loop tl (acc + System.Convert.ToInt32 hd - System.Convert.ToInt32 'A' + 1)
+            | _        -> acc
+        loop s 0
+    names |> Array.mapi (fun i n -> i * (getNameScore n)) |> Array.sum
+
 [<EntryPoint>]
 let main argv = 
     swStart ()
-    let r = problem19 ()
+    let r = problem22 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Console.ReadLine() |> ignore
