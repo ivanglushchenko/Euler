@@ -21,14 +21,6 @@ let getNextPrimesRange rangeFrom rangeTo primes =
 let getPrimes target f =
     getNextPrimesRange 3L target [2L] |> List.filter f
 
-//    let all = [| 3L..2L..target |] 
-//    let rec sieve all primes =
-//        if Array.isEmpty all then primes
-//        else 
-//            let nextPrime = all.[0]
-//            sieve (all |> Array.filter (fun n -> n % nextPrime <> 0L)) (if f(nextPrime) then (nextPrime :: primes) else primes)
-//    sieve all [2L]
-
 let getAllPrimes target = getPrimes target (fun n -> true)
 
 let rec gcd a b = if b = 0L then abs a else gcd b (a % b)
@@ -357,10 +349,85 @@ let problem15 () =
 let problem16 () = 
     System.Numerics.BigInteger.Pow(bigint(2), 1000).ToString() |> Seq.map (fun c -> System.Int32.Parse(c.ToString())) |> Seq.sum
 
+let problem17 () =
+    let digitToString n = 
+        match n with
+        | 1 -> "one"
+        | 2 -> "two"
+        | 3 -> "three"
+        | 4 -> "four"
+        | 5 -> "five"
+        | 6 -> "six"
+        | 7 -> "seven"
+        | 8 -> "eight"
+        | 9 -> "nine"
+        | _ -> raise (new System.Exception())
+    let tensToString d n  = 
+        match (d, n) with
+        | (1, 0) -> "ten"
+        | (1, 1) -> "eleven"
+        | (1, 2) -> "twelve"
+        | (1, 3) -> "thirteen"
+        | (1, 4) -> "fourteen"
+        | (1, 5) -> "fifteen"
+        | (1, _) -> digitToString n + "teen"
+        | (2, _) -> "twenty" + if n > 0 then "-" + digitToString n else ""
+        | (3, _) -> "thirty" + if n > 0 then "-" + digitToString n else ""
+        | (4, _) -> "forty" + if n > 0 then "-" + digitToString n else ""
+        | (5, _) -> "fifty" + if n > 0 then "-" + digitToString n else ""
+        | (6, _) -> "sixty" + if n > 0 then "-" + digitToString n else ""
+        | (7, _) -> "seventy" + if n > 0 then "-" + digitToString n else ""
+        | (8, _) -> "eighty" + if n > 0 then "-" + digitToString n else ""
+        | (9, _) -> "ninety" + if n > 0 then "-" + digitToString n else ""
+        | _ -> raise (new System.Exception())
+
+    let numberToString n =
+        if n = 1000 then "one thousand"
+        else
+            let xs = n.ToString() |> Seq.toList
+            let toInt c = System.Int32.Parse(c.ToString())
+            let (hundreds, tens, ones) = 
+                match xs with
+                    | c1 :: c2 :: c3 :: [] -> (toInt c1, toInt c2, toInt c3)
+                    | c1 :: c2 :: []       -> (0, toInt c1, toInt c2)
+                    | c1 :: []             -> (0, 0, toInt c1)
+                    | _                    -> raise (new System.Exception())
+            let s = 
+                if hundreds > 0 then 
+                    if tens > 0 || ones > 0 then (digitToString hundreds) + " hundred and " 
+                    else (digitToString hundreds) + " hundred "
+                else ""
+            let s = 
+                if tens > 0 then s + tensToString tens ones 
+                else if ones > 0 then s + digitToString ones else ""
+            s
+    let numbers = [| for n in 1..1000 -> numberToString n |]
+    numbers |> Array.map (fun n -> n |> Seq.filter (fun c -> System.Char.IsLetter c) |> Seq.length) |> Array.sum
+
+let problem18 () = 
+    let lines = System.IO.File.ReadAllLines "P18Input.txt" |> Array.map (fun s -> s.Split ' ' |> Array.map (fun t -> System.Int64.Parse t))
+    let n = lines.Length
+    let grid = [| for i in 1..n -> [| for j in 1..n -> 0L |] |]
+    grid.[0].[0] <- lines.[0].[0]
+    for i in 2..n do
+        for j in 1..i do
+            let m1 = if i > j then lines.[i - 1].[j - 1] + grid.[i - 2].[j - 1] else 0L
+            let m2 = if j > 1 then lines.[i - 1].[j - 1] + grid.[i - 2].[j - 2] else 0L
+            grid.[i - 1].[j - 1] <- max m1 m2
+    grid.[n - 1] |> Array.max
+
+let problem19 () = 
+    let startDate = new System.DateTime(1901, 1, 1)
+    let rec loop (dt: System.DateTime) acc =
+        if dt.Year > 2000 then acc
+        else if dt.DayOfWeek = System.DayOfWeek.Sunday then loop (dt.AddMonths 1) (acc + 1)
+        else loop (dt.AddMonths 1) acc
+    loop startDate 0
+
 [<EntryPoint>]
 let main argv = 
     swStart ()
-    let r = problem16 ()
+    let r = problem19 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Console.ReadLine() |> ignore
