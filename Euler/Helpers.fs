@@ -32,3 +32,41 @@ let getFactors target =
 let toInt c = System.Int32.Parse(c.ToString())
 
 let getLines s = System.IO.File.ReadAllLines s
+
+let pow n p = int64(System.Math.Pow(float(n), float(p)))
+
+let getPrimeDivisors n primes =
+    let mutable remainder = n
+    let mutable primeIndex = 0
+    let mutable divisors = []
+    while remainder > 1L && primeIndex < (primes |> Array.length) && primes.[primeIndex] <= n do
+        let prime = primes.[primeIndex]
+        let mutable primeDegree = 0L
+        while remainder % prime = 0L do
+            primeDegree <- primeDegree + 1L
+            remainder <- remainder / prime
+        if primeDegree > 0L then
+            divisors <- (prime, primeDegree) :: divisors
+        primeIndex <- primeIndex + 1
+    divisors
+
+let getProperDivisors list = 
+    let rec loop list = 
+        match list with
+        | (a, b) :: hd :: tl ->
+            let divisors = [ for x in 0L..b -> (if x = 0L then 1L else (x * a)) ]
+            let rest = loop (hd :: tl)
+            seq { for x in divisors do
+                    for y in rest do
+                        yield x * y } |> Seq.toList
+        | (a, b) :: [] -> [ for x in 0L..b -> int64(System.Math.Pow(float(a), float(x))) ]// (if x = 0L then 1L else (x * a)) ]
+        | _            -> []
+    loop list
+
+let getProperDivisorsSum n primes = 
+    let t = 
+        getPrimeDivisors n primes 
+        |> List.map (fun (p, a) -> (pow p (a + 1L) - 1L) / (p - 1L))
+        |> List.fold (fun acc t -> acc * t) 1L
+    t - n
+//let getProperDivisorsSum n primes = (getPrimeDivisors n primes |> getProperDivisors |> Seq.sum) - n

@@ -402,37 +402,10 @@ let problem20 () =
     (fac 100).ToString() |> Seq.map toInt |> Seq.sum
 
 let problem21 () = 
-    let primes = getAllPrimes 10000L |> List.rev |> List.toArray
-    let getPrimeDivisors n primes =
-        let mutable remainder = n
-        let mutable primeIndex = 0
-        let mutable divisors = []
-        while remainder > 1L && primeIndex < (primes |> Array.length) && primes.[primeIndex] <= n do
-            let prime = primes.[primeIndex]
-            let mutable primeDegree = 0L
-            while remainder % prime = 0L do
-                primeDegree <- primeDegree + 1L
-                remainder <- remainder / prime
-                
-            if primeDegree > 0L then
-                divisors <- (prime, primeDegree) :: divisors
-            primeIndex <- primeIndex + 1
-        divisors
-    let getProperDivisors list = 
-        let rec loop list = 
-            match list with
-            | (a, b) :: hd :: tl ->
-                let divisors = [ for x in 0L..b -> (if x = 0L then 1L else (x * a)) ]
-                let rest = loop (hd :: tl)
-                seq { for x in divisors do
-                        for y in rest do
-                            yield x * y } |> Seq.toList
-            | (a, b) :: [] -> [ for x in 0L..b -> (if x = 0L then 1L else (x * a)) ]
-            | _            -> []
-        loop list
-    let getProperDivisorsSum n = (getPrimeDivisors n primes |> getProperDivisors |> Seq.sum) - n
-    let map = [ for x in 1L..9999L -> (x, getProperDivisorsSum x) ] |> Map.ofList
-    let amicableNumbers = map |> Map.toSeq |> Seq.filter (fun (x, y) -> map.ContainsKey y && map.[y] = x)
+    let limit = 100000L
+    let primes = getAllPrimes limit |> List.rev |> List.toArray
+    let map = [ for x in 1L..limit - 1L -> (x, getProperDivisorsSum x primes) ] |> Map.ofList
+    let amicableNumbers = map |> Map.toSeq |> Seq.filter (fun (x, y) -> x <> y && map.ContainsKey y && map.[y] = x)
     (amicableNumbers |> Seq.map (fun (x, y) -> x + y) |> Seq.sum) / 2L
 
 let problem22 () = 
@@ -449,10 +422,23 @@ let problem22 () =
         loop s 0
     names |> Array.mapi (fun i n -> i * (getNameScore n)) |> Array.sum
 
+let problem23 () =
+    let upperLimit = 29123L
+    let primes = getAllPrimes upperLimit |> List.rev |> List.toArray
+    let divs = [ for x in 1L..upperLimit -> (x, getProperDivisorsSum x primes) ]
+    let divsMap = divs |> Map.ofList
+    let abudantNumbers = divs |> List.filter (fun (k, v) -> v > k) |> List.map fst |> Set.ofList
+    let isNotSumOfAbudantNumbers n = 
+        abudantNumbers |> Set.forall (fun a -> abudantNumbers.Contains (n - a) = false)
+    let nonFactorizableNumbers =
+        seq { for i in 1L..upperLimit do
+                if isNotSumOfAbudantNumbers i then yield i }
+    nonFactorizableNumbers |> Seq.sum
+
 [<EntryPoint>]
 let main argv = 
     swStart ()
-    let r = problem22 ()
+    let r = problem23 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Console.ReadLine() |> ignore
