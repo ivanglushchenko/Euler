@@ -330,19 +330,15 @@ let problem13 () =
     nums |> Array.sum
 
 let problem14 () =
-//    let rec collatz x =
-//        seq { yield x
-//              if x <> 1 then
-//                yield! if x % 2 = 0 then collatz (x / 2) else collatz (x * 3 + 1) }
-//    seq { for n in 1..1000000 -> collatz n |> Seq.length } |> Seq.max
     let getSeqLength startingPoint =
         let mutable x = startingPoint
         let mutable length = 1
         while x <> 1L do
             length <- length + 1
             x <- if x % 2L = 0L then x / 2L else x * 3L + 1L
-        length
-    seq { for n in 1L..999999L -> getSeqLength n } |> Seq.max
+        (length, startingPoint)
+    let test = getSeqLength 13L
+    seq { for n in 1L..999999L -> getSeqLength n } |> Seq.max |> snd
 
 [<EntryPoint>]
 let main argv = 
