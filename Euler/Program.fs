@@ -354,10 +354,13 @@ let problem15 () =
             if j > 0 then grid.[i].[j] <- grid.[i].[j] + grid.[i].[j - 1]
     grid.[n - 1].[n - 1]
 
+let problem16 () = 
+    System.Numerics.BigInteger.Pow(bigint(2), 1000).ToString() |> Seq.map (fun c -> System.Int32.Parse(c.ToString())) |> Seq.sum
+
 [<EntryPoint>]
 let main argv = 
     swStart ()
-    let r = problem15 ()
+    let r = problem16 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Console.ReadLine() |> ignore
