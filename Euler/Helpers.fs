@@ -59,7 +59,7 @@ let getProperDivisors list =
             seq { for x in divisors do
                     for y in rest do
                         yield x * y } |> Seq.toList
-        | (a, b) :: [] -> [ for x in 0L..b -> int64(System.Math.Pow(float(a), float(x))) ]// (if x = 0L then 1L else (x * a)) ]
+        | (a, b) :: [] -> [ for x in 0L..b -> int64(System.Math.Pow(float(a), float(x))) ]
         | _            -> []
     loop list
 
@@ -69,4 +69,3 @@ let getProperDivisorsSum n primes =
         |> List.map (fun (p, a) -> (pow p (a + 1L) - 1L) / (p - 1L))
         |> List.fold (fun acc t -> acc * t) 1L
     t - n
-//let getProperDivisorsSum n primes = (getPrimeDivisors n primes |> getProperDivisors |> Seq.sum) - n

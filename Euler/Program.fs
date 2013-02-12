@@ -340,6 +340,7 @@ let problem17 () =
         | (1, 3) -> "thirteen"
         | (1, 4) -> "fourteen"
         | (1, 5) -> "fifteen"
+        | (1, 8) -> "eighteen"
         | (1, _) -> digitToString n + "teen"
         | (2, _) -> "twenty" + if n > 0 then "-" + digitToString n else ""
         | (3, _) -> "thirty" + if n > 0 then "-" + digitToString n else ""
@@ -369,10 +370,11 @@ let problem17 () =
                 else ""
             let s = 
                 if tens > 0 then s + tensToString tens ones 
-                else if ones > 0 then s + digitToString ones else ""
+                else if ones > 0 then s + digitToString ones else s
             s
+    let getCount s = s |> Seq.filter (fun c -> System.Char.IsLetter c) |> Seq.length
     let numbers = [| for n in 1..1000 -> numberToString n |]
-    numbers |> Array.map (fun n -> n |> Seq.filter (fun c -> System.Char.IsLetter c) |> Seq.length) |> Array.sum
+    numbers |> Array.map getCount |> Array.sum
 
 let problem18 () = 
     let lines = getLines "P18Input.txt" |> Array.map (fun s -> s.Split ' ' |> Array.map (fun t -> System.Int64.Parse t))
@@ -402,7 +404,7 @@ let problem20 () =
     (fac 100).ToString() |> Seq.map toInt |> Seq.sum
 
 let problem21 () = 
-    let limit = 100000L
+    let limit = 10000L
     let primes = getAllPrimes limit |> List.rev |> List.toArray
     let map = [ for x in 1L..limit - 1L -> (x, getProperDivisorsSum x primes) ] |> Map.ofList
     let amicableNumbers = map |> Map.toSeq |> Seq.filter (fun (x, y) -> x <> y && map.ContainsKey y && map.[y] = x)
@@ -420,8 +422,9 @@ let problem22 () =
             | hd :: tl -> loop tl (acc + System.Convert.ToInt32 hd - System.Convert.ToInt32 'A' + 1)
             | _        -> acc
         loop s 0
-    names |> Array.mapi (fun i n -> i * (getNameScore n)) |> Array.sum
+    names |> Array.mapi (fun i n -> (i + 1) * (getNameScore n)) |> Array.sum
 
+// 4179871
 let problem23 () =
     let upperLimit = 29123L
     let primes = getAllPrimes upperLimit |> List.rev |> List.toArray
@@ -435,10 +438,30 @@ let problem23 () =
                 if isNotSumOfAbudantNumbers i then yield i }
     nonFactorizableNumbers |> Seq.sum
 
+// 2783915460
+let problem24 () =
+    let getSplits xs = 
+        let rec loop before after =
+            match after with
+            | hd :: tl -> (before, after) :: (loop (before @ [after.Head]) after.Tail)
+            | []       -> [(before, [])]
+        loop [] xs
+    let extend el xs = getSplits xs |> List.map (fun (before, after) -> before @ [el] @ after)
+    let rec getPermutations set = 
+        match set with
+        | el :: nk :: tl ->
+            let rest = getPermutations (nk :: tl)
+            rest |> List.collect (fun s -> extend el s)
+        | hd :: []       -> [ [ hd ] ]
+        | []             -> []
+    let s = [ for x in 0..9 -> x.ToString() ]
+    let allPerutations = getPermutations s |> List.map (fun s -> s |> List.fold (fun acc i -> acc + i) "") |> List.sort
+    List.nth allPerutations 999999
+
 [<EntryPoint>]
 let main argv = 
     swStart ()
-    let r = problem23 ()
+    let r = problem24 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Console.ReadLine() |> ignore
