@@ -359,22 +359,97 @@ let problem26 () =
         loop 1 Set.empty
     seq { for n in 1..999 -> (getCycleLength n, n) } |> Seq.maxBy fst |> snd
 
+// -59231
 let problem27 () =
     let f n a b = n * n + a * n + b
-    let primes = getAllPrimes 10000L
+    let primes = getAllPrimes 10000L 
+    let primesSet = primes |> Set.ofList
     let choicesForB = [ for x in primes |> List.filter (fun p -> p < 1000L) -> [ x; -x ] ] |> List.concat
     let coefs =
         seq { for a in -999L..999L do
                 for b in choicesForB do yield (a, b) }
-    //let getMaxNumOfPrimes 
-    //coefs |> 
-    0
+    let getMaxNumOfPrimes (a, b) =
+        let rec loop i =
+            let p = f i a b
+            if primesSet.Contains p then loop (i + 1L)
+            else i
+        loop 0L
+    let (a, b) = coefs |> Seq.map (fun t -> (getMaxNumOfPrimes t, t)) |> Seq.maxBy fst |> snd
+    a * b
+
+// 669171001
+let problem28 () =
+    let upperRight  n = (2 * n + 1) * (2 * n + 1)
+    let upperLeft   n = (2 * n + 1) * (2 * n + 1) - 2 * n
+    let lowerLeft   n = (2 * n + 1) * (2 * n + 1) - 4 * n
+    let lowerRight  n = (2 * n + 1) * (2 * n + 1) - 6 * n
+    let sumOfDiag n = if n = 0 then 1 else upperRight n + upperLeft n + lowerLeft n + lowerRight n
+    seq { for n in 0..500 -> sumOfDiag n } |> Seq.sum
+
+// 9183
+let problem29 () =
+    let distinctNums =
+        seq { for a in 2..100 do
+                for b in 2..100 do
+                    yield System.Numerics.BigInteger.Pow(bigint(a), b).ToString() } |> Set.ofSeq
+    distinctNums.Count
+
+// 443839
+let problem30 () =
+    let getSumOfDigPow n = getDigits n |> List.map (fun n -> pow n 5) |> List.sum
+    seq { for n in 10..9999999 do
+            let sum = getSumOfDigPow n
+            if sum = n then yield n } |> Seq.sum
+
+// 73682
+let problem31 () =
+    let rec getCombinations coins sum =
+        if sum = 0 then [ [ ] ]
+        else 
+            match coins with
+            | coin :: nk :: tl ->
+                let allCoinCombinations = [ for i in 0..sum / coin -> ([ for j in 1..i -> coin ], sum - coin * i) ]
+                let extendCoinCombination (partialSolution, rest) = 
+                    let combinationForRest = getCombinations (nk :: tl) rest
+                    [ for sln in combinationForRest -> partialSolution @ sln ]
+                allCoinCombinations |> List.collect extendCoinCombination
+            | coin :: [] ->
+                let (d, r) = (sum / coin, sum % coin)
+                if r = 0 then [ [ for i in 1..d -> coin ] ]
+                else []
+            | [] -> []
+    getCombinations [ 1; 2; 5; 10; 20; 50; 100; 200 ] 200 |> List.length
+
+// 45228
+let problem32 () = 
+    let combineDigits n1 n2 = 
+        let mutable t = n1
+        let mutable r = n2
+        while r > 0L do
+            t <- t * 10L
+            r <- r / 10L
+        t + n2
+    let smallestPanDigit = 123456789L
+    let largestPanDigit =  987654321L
+    let isPanDig x y = 
+        let r = combineDigits x y |> combineDigits (x * y)
+        if r < smallestPanDigit || r > largestPanDigit then false
+        else
+            let s = getDigits64 r |> Set.ofList
+            s.Count = 9 && (s.Contains 0L = false)
+    let t = isPanDig 19L 657L
+    let t1 = isPanDig 7L 1470L
+    let allProds = 
+        seq { for i in 1L..99L do
+                for j in 123L..9876L do
+                    if isPanDig i j then yield (i * j, (i, j)) } |> Map.ofSeq
+    allProds |> Map.toSeq |> Seq.map fst |> Seq.sum
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem27 ()
+    let r = problem32 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())

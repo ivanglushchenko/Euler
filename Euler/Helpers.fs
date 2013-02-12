@@ -33,9 +33,15 @@ let toInt c = System.Int32.Parse(c.ToString())
 
 let getLines s = System.IO.File.ReadAllLines s
 
-let loadMatrix fn = getLines fn |> Array.map (fun s -> s.Split ' ' |> Array.map (fun t -> System.Int64.Parse t))
+let loadMatrix fn = 
+    let toArray (s: string) = 
+        s.Split ' ' 
+            |> Array.filter (fun t -> System.String.IsNullOrWhiteSpace t = false) 
+            |> Array.map (fun t -> System.Int64.Parse t)
+    getLines fn |> Array.map toArray
 
-let pow n p = int64(System.Math.Pow(float(n), float(p)))
+let pow n p = int(System.Math.Pow(float(n), float(p)))
+let pow64 n p = int64(System.Math.Pow(float(n), float(p)))
 
 let getPrimeDivisors n primes =
     let mutable remainder = n
@@ -68,6 +74,20 @@ let getProperDivisors list =
 let getProperDivisorsSum n primes = 
     let t = 
         getPrimeDivisors n primes 
-        |> List.map (fun (p, a) -> (pow p (a + 1L) - 1L) / (p - 1L))
+        |> List.map (fun (p, a) -> (pow64 p (a + 1L) - 1L) / (p - 1L))
         |> List.fold (fun acc t -> acc * t) 1L
     t - n
+
+let getDigits n = 
+    let rec loop n acc =
+        let (d, r) = (n / 10, n % 10)
+        if d = 0 then r :: acc
+        else loop d (r :: acc)
+    loop n []
+
+let getDigits64 n = 
+    let rec loop n acc =
+        let (d, r) = (n / 10L, n % 10L)
+        if d = 0L then r :: acc
+        else loop d (r :: acc)
+    loop n []
