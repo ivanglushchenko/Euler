@@ -33,6 +33,8 @@ let toInt c = System.Int32.Parse(c.ToString())
 
 let getLines s = System.IO.File.ReadAllLines s
 
+let loadMatrix fn = getLines fn |> Array.map (fun s -> s.Split ' ' |> Array.map (fun t -> System.Int64.Parse t))
+
 let pow n p = int64(System.Math.Pow(float(n), float(p)))
 
 let getPrimeDivisors n primes =
