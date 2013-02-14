@@ -23,7 +23,9 @@ let getPrimes target f =
 
 let getAllPrimes target = getPrimes target (fun n -> true)
 
-let rec gcd a b = if b = 0L then abs a else gcd b (a % b)
+let rec gcd a b = if b = 0 then abs a else gcd b (a % b)
+
+let rec gcd64 a b = if b = 0L then abs a else gcd64 b (a % b)
 
 let getFactors target =
     let targetsr = int64(sqrt (float target))
@@ -91,3 +93,42 @@ let getDigits64 n =
         if d = 0L then r :: acc
         else loop d (r :: acc)
     loop n []
+
+let loadPrimes () =
+    if System.IO.File.Exists "primes.txt" then
+        System.IO.File.ReadAllLines("primes.txt") |> Array.map (fun l -> System.Int64.Parse l)
+    else
+        [| 2L |]
+
+let calcPrimes nextNPrimes =
+    let existingPrimes = loadPrimes () |> Array.sortBy (fun t -> -t) |> Array.toList
+    let maxPrime = existingPrimes |> List.max
+    let morePrimes = getNextPrimesRange maxPrime (maxPrime + nextNPrimes) existingPrimes |> List.sort
+
+    use sw = new System.IO.StreamWriter("primes.txt", false)
+    for p in morePrimes do
+        sw.WriteLine p
+    sw.Flush()
+    sw.Close()
+
+let toNum xs = xs |> List.mapi (fun i t -> (xs.Length - i - 1, t)) |> List.fold (fun acc (i, t) -> acc + (pow64 10L (int64(i))) * t) 0L
+
+let combineDigits n1 n2 = 
+    let mutable t = n1
+    let mutable r = n2
+    while r > 0L do
+        t <- t * 10L
+        r <- r / 10L
+    t + n2
+
+let smallestPanDigit = 123456789L
+
+let largestPanDigit =  987654321L
+
+let isPanDig r = 
+    if r < smallestPanDigit || r > largestPanDigit then false
+    else
+        let s = getDigits64 r |> Set.ofList
+        s.Count = 9 && (s.Contains 0L = false)
+
+let isPanDig3 x y z = combineDigits x y |> combineDigits z |> isPanDig

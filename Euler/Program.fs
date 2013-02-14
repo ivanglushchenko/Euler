@@ -36,7 +36,7 @@ let problem5 () =
         match l with
         | hd :: tl -> 
             if p % hd <> 0L then
-                let t = gcd p hd
+                let t = gcd64 p hd
                 let r = hd / t
                 increase tl (p * r)
             else increase tl p
@@ -119,23 +119,6 @@ let problem11 () =
                 for j in 0..16 do
                     yield getDiagProd2 i j } |> Seq.max
     max (max (max maxHorProduct maxVertProduct) maxDiagProduct) maxDiagProduct2
-
-let loadPrimes () =
-    if System.IO.File.Exists "primes.txt" then
-        System.IO.File.ReadAllLines("primes.txt") |> Array.map (fun l -> System.Int64.Parse l)
-    else
-        [| 2L |]
-
-let calcPrimes nextNPrimes =
-    let existingPrimes = loadPrimes () |> Array.sortBy (fun t -> -t) |> Array.toList
-    let maxPrime = existingPrimes |> List.max
-    let morePrimes = getNextPrimesRange maxPrime (maxPrime + nextNPrimes) existingPrimes |> List.sort
-
-    use sw = new System.IO.StreamWriter("primes.txt", false)
-    for p in morePrimes do
-        sw.WriteLine p
-    sw.Flush()
-    sw.Close()
 
 // explanation for the math: http://code.jasonbhill.com/sage/project-euler-problem-12/
 let problem12 () = 
@@ -422,34 +405,126 @@ let problem31 () =
 
 // 45228
 let problem32 () = 
-    let combineDigits n1 n2 = 
-        let mutable t = n1
-        let mutable r = n2
-        while r > 0L do
-            t <- t * 10L
-            r <- r / 10L
-        t + n2
-    let smallestPanDigit = 123456789L
-    let largestPanDigit =  987654321L
-    let isPanDig x y = 
-        let r = combineDigits x y |> combineDigits (x * y)
-        if r < smallestPanDigit || r > largestPanDigit then false
-        else
-            let s = getDigits64 r |> Set.ofList
-            s.Count = 9 && (s.Contains 0L = false)
-    let t = isPanDig 19L 657L
-    let t1 = isPanDig 7L 1470L
+    let isPanDig2 x y = isPanDig3 x y (x * y)
+    let t = isPanDig2 19L 657L
+    let t1 = isPanDig2 7L 1470L
     let allProds = 
         seq { for i in 1L..99L do
                 for j in 123L..9876L do
-                    if isPanDig i j then yield (i * j, (i, j)) } |> Map.ofSeq
+                    if isPanDig2 i j then yield (i * j, (i, j)) } |> Map.ofSeq
     allProds |> Map.toSeq |> Seq.map fst |> Seq.sum
+
+// 100
+let problem33 () =
+    let isCurious (n1, n2) (d1, d2) =
+        let num = n1 * 10 + n2
+        let den = d1 * 10 + d2
+        let check n d = num * d = n * den
+        if num = 0 || den = 0 || num >= den || (n2 = 0 && d2 = 0) then false
+        else
+            if n1 = d1 then check n2 d2
+            else if n2 = d2 then check n1 d1
+            else if n2 = d1 then check n1 d2
+            else if n1 = d2 then check n2 d1
+            else false
+    let allNums = 
+        seq { for n1 in 1..9 do
+                for n2 in 0..9 do
+                    for d1 in 1..9 do
+                        for d2 in 0..9 do
+                            if isCurious (n1, n2) (d1, d2) then yield (n1 * 10 + n2, d1 * 10 + d2) }// |> Seq.toArray
+    let prod = allNums |> Seq.fold (fun (an, ad) (n, d) -> (an * n, ad * d)) (1, 1)
+    let g = gcd (fst prod) (snd prod)
+    snd prod / g
+
+// 40730
+let problem34 () = 
+    let rec factorial n = if n <= 1 then 1 else n * factorial (n - 1)
+    let isCurious n = 
+        if n <= 2 then false
+        else
+            let digits = getDigits n
+            n = (digits |> List.map (fun t -> factorial t) |> List.sum)
+    seq { for n in 3..999999 do
+            if isCurious n then yield n } |> Seq.sum
+    
+// 55
+let problem35 () =
+    let primes = loadPrimes () |> Array.filter (fun p -> p < 1000000L)
+    let primesMap = primes |> Set.ofArray
+    let isCircular p = 
+        let digits = getDigits64 p
+        if digits.Length = 1 then true
+        else
+            let rec loop xs mult acc = 
+                match xs with
+                | hd :: nk :: tl ->
+                    let rest = (acc * 10L) + hd
+                    let t = (toNum (nk :: tl)) * mult + rest
+                    if primesMap.Contains t then
+                        loop (nk :: tl) (mult * 10L) rest
+                    else false
+                | _ -> true
+            loop digits 10L 0L
+    primes |> Array.filter isCircular |> Array.length
+
+// 872187
+let problem36 () =
+    let isPalBase10 n =
+        let a = getDigits n |> Array.ofList
+        seq { for i in 0..a.Length / 2 -> i } |> Seq.forall (fun i -> a.[i] = a.[a.Length - i - 1])
+    let isPalBase2 (n: int) =
+        let b = new System.Collections.BitArray([| n |])
+        let bound = seq { for i in 31..-1..0 do
+                            if b.[i] then yield i } |> Seq.take 1 |> Seq.head
+        seq { for i in 0..bound / 2 -> i } |> Seq.forall (fun i -> b.[i] = b.[bound - i])
+    let nums =
+        seq { for i in 1..999999 do
+                if isPalBase10 i && isPalBase2 i then yield i }
+    nums |> Seq.sum
+  
+// 748317  
+let problem37 () =
+    let primes = loadPrimes () |> Array.filter (fun p -> p < 1000000L)
+    let primesMap = primes |> Set.ofArray
+    let isPrimeTruncatable p =
+        if p < 10L then false
+        else
+            let rec checkTails xs =
+                match xs with
+                | hd :: nk :: tl -> if primesMap.Contains (toNum (nk :: tl)) then checkTails (nk ::tl) else false
+                | _              -> true
+            let rec checkHeads n =
+                if n > 1L then
+                    let t = n / 10L
+                    if t = 0L || primesMap.Contains t then checkHeads t else false
+                else true
+            if checkHeads p then
+                getDigits64 p |> checkTails
+            else false
+    primes |> Array.filter isPrimeTruncatable |> Array.sum
+
+// 932718654
+let problem38 () =
+    seq { for i in 9123L..9876L do
+            let d = combineDigits i (i * 2L)
+            if isPanDig d then yield d } |> Seq.max
+
+let problem39 () =
+    //let squares = seq { for p in 1..1000 -> p * p }
+    //let squaresSet = squaresMap |> Set.ofSeq
+    //let getSides p =
+    //    let pSquare = p * p
+        
+        
+    
+    0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem32 ()
+    let r = problem39 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
