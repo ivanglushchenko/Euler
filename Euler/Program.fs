@@ -510,15 +510,14 @@ let problem38 () =
             let d = combineDigits i (i * 2L)
             if isPanDig d then yield d } |> Seq.max
 
+// 840
 let problem39 () =
-    //let squares = seq { for p in 1..1000 -> p * p }
-    //let squaresSet = squaresMap |> Set.ofSeq
-    //let getSides p =
-    //    let pSquare = p * p
-        
-        
-    
-    0
+    seq { for p in 12..1000 do
+            for b in 1..p - 1 do
+                let num = 2 * p * b - p * p
+                let den = 2 * (b - p)
+                let (a, r) = (num / den, num % den)
+                if r = 0 && a > 0 && a >= b then yield (p, (b, a, p - b - a)) } |> Seq.groupBy fst |> Seq.maxBy (fun t -> snd t |> Seq.length) |> fst
 
 [<EntryPoint>]
 [<System.STAThread>]
