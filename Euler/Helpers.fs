@@ -1,5 +1,8 @@
 ﻿module Helpers
 
+open System
+open System.Collections
+
 let stopwatch = new System.Diagnostics.Stopwatch()
 let swStart () = stopwatch.Start()
 let swStop () = 
@@ -125,6 +128,15 @@ let smallestPanDigit = 123456789L
 
 let largestPanDigit =  987654321L
 
+let smallestPan10Digit = 1023456789L
+
+let largestPan10Digit =  9876543210L
+
+let isPanDig10 r = 
+    if r < smallestPan10Digit || r > largestPan10Digit then false
+    else
+        getDigits64 r |> Set.ofList |> Set.count = 10
+
 let isPanDig r = 
     if r < smallestPanDigit || r > largestPanDigit then false
     else
@@ -132,3 +144,29 @@ let isPanDig r =
         s.Count = 9 && (s.Contains 0L = false)
 
 let isPanDig3 x y z = combineDigits x y |> combineDigits z |> isPanDig
+
+let primeGenFast rangeTo =
+    let upperBound = int(Math.Sqrt (float(rangeTo))) + 1
+    let primeBits = new BitArray(rangeTo + 1, true)
+    primeBits.Set (0, false)
+    primeBits.Set (1, false)
+    for p in 2..upperBound do
+        if primeBits.Get p then
+            for pMult in p * 2..p..rangeTo do
+                primeBits.Set (pMult, false)
+    [| for i in 2..rangeTo do if primeBits.Get i then yield i |]
+
+let rec getPermutations set = 
+    let getSplits xs = 
+        let rec loop before after =
+            match after with
+            | hd :: tl -> (before, after) :: (loop (before @ [after.Head]) after.Tail)
+            | []       -> [(before, [])]
+        loop [] xs
+    let extend el xs = getSplits xs |> List.map (fun (before, after) -> before @ [el] @ after)
+    match set with
+    | el :: nk :: tl ->
+        let rest = getPermutations (nk :: tl)
+        rest |> List.collect (fun s -> extend el s)
+    | hd :: []       -> [ [ hd ] ]
+    | []             -> []

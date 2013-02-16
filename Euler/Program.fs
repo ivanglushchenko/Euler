@@ -1,4 +1,6 @@
 ﻿open Helpers
+open System
+open System.Collections
 
 let problem1 () =
     seq { for n in 1..999 do if n % 3 = 0 || n % 5 = 0 then yield n } |> Seq.sum
@@ -166,7 +168,6 @@ let problem14 () =
 
 let problem15 () =
     let n = 21
-    
     let grid = [| for i in 1..n -> [| for j in 1..n -> 0L |] |]
     grid.[0].[0] <- 1L
     for layer in 2..n * 2 - 1 do
@@ -302,20 +303,6 @@ let problem23 () =
 
 // 2783915460
 let problem24 () =
-    let getSplits xs = 
-        let rec loop before after =
-            match after with
-            | hd :: tl -> (before, after) :: (loop (before @ [after.Head]) after.Tail)
-            | []       -> [(before, [])]
-        loop [] xs
-    let extend el xs = getSplits xs |> List.map (fun (before, after) -> before @ [el] @ after)
-    let rec getPermutations set = 
-        match set with
-        | el :: nk :: tl ->
-            let rest = getPermutations (nk :: tl)
-            rest |> List.collect (fun s -> extend el s)
-        | hd :: []       -> [ [ hd ] ]
-        | []             -> []
     let s = [ for x in 0..9 -> x.ToString() ]
     let allPerutations = getPermutations s |> List.map (fun s -> s |> List.fold (fun acc i -> acc + i) "") |> List.sort
     List.nth allPerutations 999999
@@ -474,7 +461,7 @@ let problem36 () =
         let a = getDigits n |> Array.ofList
         seq { for i in 0..a.Length / 2 -> i } |> Seq.forall (fun i -> a.[i] = a.[a.Length - i - 1])
     let isPalBase2 (n: int) =
-        let b = new System.Collections.BitArray([| n |])
+        let b = new BitArray([| n |])
         let bound = seq { for i in 31..-1..0 do
                             if b.[i] then yield i } |> Seq.take 1 |> Seq.head
         seq { for i in 0..bound / 2 -> i } |> Seq.forall (fun i -> b.[i] = b.[bound - i])
@@ -519,11 +506,42 @@ let problem39 () =
                 let (a, r) = (num / den, num % den)
                 if r = 0 && a > 0 && a >= b then yield (p, (b, a, p - b - a)) } |> Seq.groupBy fst |> Seq.maxBy (fun t -> snd t |> Seq.length) |> fst
 
+// 210
+let problem40 () =
+    let rec digits n = 
+        seq { for i in getDigits n do
+                yield i
+              yield! digits (n + 1)}
+    let d = digits 1 |> Seq.take 1000000 |> Seq.toArray
+    d.[0] * d.[9] * d.[99] * d.[999] * d.[9999] * d.[99999] * d.[999999]
+
+// 7652413
+let problem41 () =
+    let primes = primeGenFast 10000000 |> Set.ofArray
+    seq { for i in 1234567..7654321 do
+            if primes.Contains i && isPanDig3 (int64(i)) 8L 9L then yield i } |> Seq.max
+
+let problem42 () =
+    let primes = primeGenFast 100 |> Array.mapi (fun i p -> (i, p)) |> Map.ofArray
+    let rec isInterestingNumber n =
+        let rec loop n i = 
+            match n with
+            | hd :: tl -> 0
+            | []       -> 0
+        loop (n |> List.tail) 2
+    let digits = [ for i in 0L..9L -> i ]
+    let allPerutations = 
+        getPermutations digits
+        |> List.filter (fun l -> l |> List.head <> 0L)
+
+    
+    0
+
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem39 ()
+    let r = problem42 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
