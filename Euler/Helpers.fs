@@ -170,3 +170,16 @@ let rec getPermutations set =
         rest |> List.collect (fun s -> extend el s)
     | hd :: []       -> [ [ hd ] ]
     | []             -> []
+
+let loadStrings fileName = 
+    getLines fileName
+    |> Array.collect (fun l -> l.Split ',') 
+    |> Array.sort
+    |> Array.map (fun n -> n.Trim '"' |> Seq.toList)
+
+let getStringScore s =
+    let rec loop (s: char list) acc = 
+        match s with
+        | hd :: tl -> loop tl (acc + System.Convert.ToInt32 hd - System.Convert.ToInt32 'A' + 1)
+        | _        -> acc
+    loop s 0

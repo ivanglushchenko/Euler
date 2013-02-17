@@ -274,18 +274,8 @@ let problem21 () =
     (amicableNumbers |> Seq.map (fun (x, y) -> x + y) |> Seq.sum) / 2L
 
 let problem22 () = 
-    let names = 
-        getLines "P22Input.txt" 
-        |> Array.collect (fun l -> l.Split ',') 
-        |> Array.sort
-        |> Array.map (fun n -> n.Trim '"' |> Seq.toList)
-    let getNameScore s =
-        let rec loop (s: char list) acc = 
-            match s with
-            | hd :: tl -> loop tl (acc + System.Convert.ToInt32 hd - System.Convert.ToInt32 'A' + 1)
-            | _        -> acc
-        loop s 0
-    names |> Array.mapi (fun i n -> (i + 1) * (getNameScore n)) |> Array.sum
+    let names = loadStrings "P22Input.txt"
+    names |> Array.mapi (fun i n -> (i + 1) * (getStringScore n)) |> Array.sum
 
 // 4179871
 let problem23 () =
@@ -521,27 +511,75 @@ let problem41 () =
     seq { for i in 1234567..7654321 do
             if primes.Contains i && isPanDig3 (int64(i)) 8L 9L then yield i } |> Seq.max
 
+// 162
 let problem42 () =
-    let primes = primeGenFast 100 |> Array.mapi (fun i p -> (i, p)) |> Map.ofArray
+    let scores = 
+        loadStrings "P42Input.txt"
+        |> Array.map (fun n -> getStringScore n)
+    let maxScore = scores |> Array.max
+    let triangleNums = Seq.initInfinite (fun i -> (i + 1) * (i + 2) / 2) |> Seq.takeWhile (fun n -> n <= maxScore) |> Set.ofSeq
+    scores |> Array.filter (fun n -> triangleNums.Contains n) |> Array.length
+
+// 16695334890
+let problem43 () =
+    let primes = primeGenFast 100 |> Array.mapi (fun i p -> (i, int64(p))) |> Map.ofArray
     let rec isInterestingNumber n =
         let rec loop n i = 
             match n with
-            | hd :: tl -> 0
-            | []       -> 0
-        loop (n |> List.tail) 2
+            | p1 :: p2 :: p3 :: tl ->
+                let num = toNum [ p1; p2; p3 ]
+                let den = primes.[i]
+                if num % den = 0L then loop (p2 :: p3 :: tl) (i + 1) else false
+            | _       -> true
+        loop (n |> List.tail) 0
     let digits = [ for i in 0L..9L -> i ]
     let allPerutations = 
         getPermutations digits
-        |> List.filter (fun l -> l |> List.head <> 0L)
+        |> List.filter (fun l -> l |> List.head <> 0L && isInterestingNumber l)
+        |> List.map (fun l -> toNum l)
+    allPerutations |> List.sum
 
-    
-    0
+// 5482660
+let problem44 () = 
+    let pentagonalNumsSeq = Seq.initInfinite (fun i -> (i + 1, (i + 1) * ((i + 1) * 3 - 1) / 2)) |> Seq.take 10000
+    let pnMap = pentagonalNumsSeq |> Map.ofSeq
+    let pnReverseMap = pentagonalNumsSeq |> Seq.map (fun (k, v) -> (v, k)) |> Map.ofSeq
+    let rec checkIth i currentMin =
+        if i > pnMap.Count || pnMap.[i] - pnMap.[i - 1] > currentMin then currentMin
+        else
+            let diffs = seq { for n in 1..i - 1 do
+                                let pIth = pnMap.[n]
+                                let pJth = pnMap.[i]
+                                if pnReverseMap.ContainsKey (pJth - pIth) && pnReverseMap.ContainsKey (pJth + pIth) then yield pJth - pIth }
+            if Seq.length diffs > 0 then checkIth (i + 1) (min currentMin (Seq.min diffs))
+            else checkIth (i + 1) currentMin
+    checkIth 2 (System.Int32.MaxValue)
+
+// 1533776805
+let problem45 () =
+    let getTriangleNum n = n * (n + 1L) / 2L
+    let getPentagonalNum n = n * (3L * n - 1L) / 2L
+    let getHexagonalNum n = n * (2L * n - 1L)
+    let calcHexagonalNum n2 = 
+        let det = 4L - 16L * (n2 - 3L * n2 * n2)
+        let sqr = int64(Math.Sqrt (float(det)))
+        if sqr * sqr = det then
+            let num = 2L + sqr
+            let den = 8L
+            if num % den = 0L then num / den else 0L
+        else 0L
+    Seq.initInfinite (fun i -> int64(i) + 166L)
+        |> Seq.map (fun n2 -> calcHexagonalNum n2)
+        |> Seq.filter (fun n3 -> n3 > 0L)
+        |> Seq.map (fun n1 -> getHexagonalNum n1)
+        |> Seq.take 1
+        |> Seq.head
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem42 ()
+    let r = problem45 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
