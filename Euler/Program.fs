@@ -575,11 +575,26 @@ let problem45 () =
         |> Seq.take 1
         |> Seq.head
 
+// 5777
+let problem46 () = 
+    let twiceSquares = seq { for i in 1..1000 -> 2 * i * i } |> Set.ofSeq
+    let primes = primeGenFast 1000000 |> Set.ofArray
+    let isComposable n = twiceSquares |> Set.exists (fun sq -> primes.Contains (n - sq))
+    let compositeNums = Seq.initInfinite (fun i -> i * 2 + 3) |> Seq.filter (fun n -> primes.Contains n = false && isComposable n = false)
+    compositeNums |> Seq.head
+
+let problem47 () =
+    let t = seq { for i in 1..34 do
+                    if gcd i 35 = 1 then yield i } |> Seq.toArray
+    let primes = primeGenFast 1000000
+    //Seq.initInfinite (fun i -> i + 2) |> 
+    0
+
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem45 ()
+    let r = problem47 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
