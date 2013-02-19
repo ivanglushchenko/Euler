@@ -437,7 +437,7 @@ let problem35 () =
                 match xs with
                 | hd :: nk :: tl ->
                     let rest = (acc * 10L) + hd
-                    let t = (toNum (nk :: tl)) * mult + rest
+                    let t = (toNum64 (nk :: tl)) * mult + rest
                     if primesMap.Contains t then
                         loop (nk :: tl) (mult * 10L) rest
                     else false
@@ -469,7 +469,7 @@ let problem37 () =
         else
             let rec checkTails xs =
                 match xs with
-                | hd :: nk :: tl -> if primesMap.Contains (toNum (nk :: tl)) then checkTails (nk ::tl) else false
+                | hd :: nk :: tl -> if primesMap.Contains (toNum64 (nk :: tl)) then checkTails (nk ::tl) else false
                 | _              -> true
             let rec checkHeads n =
                 if n > 1L then
@@ -527,7 +527,7 @@ let problem43 () =
         let rec loop n i = 
             match n with
             | p1 :: p2 :: p3 :: tl ->
-                let num = toNum [ p1; p2; p3 ]
+                let num = toNum64 [ p1; p2; p3 ]
                 let den = primes.[i]
                 if num % den = 0L then loop (p2 :: p3 :: tl) (i + 1) else false
             | _       -> true
@@ -536,7 +536,7 @@ let problem43 () =
     let allPerutations = 
         getPermutations digits
         |> List.filter (fun l -> l |> List.head <> 0L && isInterestingNumber l)
-        |> List.map (fun l -> toNum l)
+        |> List.map (fun l -> toNum64 l)
     allPerutations |> List.sum
 
 // 5482660
@@ -583,18 +583,61 @@ let problem46 () =
     let compositeNums = Seq.initInfinite (fun i -> i * 2 + 3) |> Seq.filter (fun n -> primes.Contains n = false && isComposable n = false)
     compositeNums |> Seq.head
 
+// 134043
 let problem47 () =
-    let t = seq { for i in 1..34 do
-                    if gcd i 35 = 1 then yield i } |> Seq.toArray
-    let primes = primeGenFast 1000000
-    //Seq.initInfinite (fun i -> i + 2) |> 
+    let primes = primeGenFast 1000000 |> Array.map (fun p -> int64(p))
+    let nums = Seq.initInfinite (fun i -> getPrimeDivisors (int64(i) + 2L) primes |> List.length) |> Seq.take 1000000 |> Seq.toList
+    let rec getDistinct i nums = 
+        match nums with
+        | n1 :: n2 :: n3 :: n4 :: tl ->
+            if n1 < 4 || n2 < 4 || n3 < 4 || n4 < 4 then getDistinct (i + 1L) (n2 :: n3 :: n4 :: tl)
+            else i
+        | _ -> 0L
+    getDistinct 2L nums
+
+// 9110846700
+let problem48 () =
+    let n = seq { for n in 1..1000 -> bigint.Pow (bigint(n), n) } |> Seq.sum
+    let s = n.ToString()
+    s.Substring (s.Length - 10)
+
+// 296962999629
+let problem49 () =
+    let primes = primeGenFast 9999 |> Array.filter (fun p -> p > 1000)
+    let primesSet = primes |> Set.ofArray
+    let getEquallyIncreasingSubList ps =
+        if ps |> List.length < 3 then []
+        else
+            let primes = ps.Tail |> Set.ofList
+            let rec loop rest =
+                match rest with
+                | hd :: tl ->
+                    let step = hd - ps.Head
+                    if primes.Contains (hd + step) then [ps.Head; hd; hd + step ]
+                    else loop tl
+                | _ -> []
+            loop ps.Tail
+    let increasingPrimes = 
+        seq { for p in primes do
+                let permutations = 
+                    getDigits p 
+                        |> getPermutations 
+                        |> List.map (fun n -> toNum n) 
+                        |> List.filter (fun n -> n > p && primesSet.Contains n) 
+                        |> (Seq.distinct >> Seq.sort >> Seq.toList)
+                let subList = p :: permutations |> getEquallyIncreasingSubList
+                if List.isEmpty subList = false then yield subList }
+    increasingPrimes |> Seq.filter (fun l -> l.Head <> 1487) |> Seq.head |> List.fold (fun acc t -> acc + (t.ToString())) ""
+
+let problem50 () = 
+    let primes = primeGenFast 999999
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem47 ()
+    let r = problem50 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())

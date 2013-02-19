@@ -46,6 +46,7 @@ let loadMatrix fn =
     getLines fn |> Array.map toArray
 
 let pow n p = int(System.Math.Pow(float(n), float(p)))
+
 let pow64 n p = int64(System.Math.Pow(float(n), float(p)))
 
 let getPrimeDivisors n primes =
@@ -114,7 +115,9 @@ let calcPrimes nextNPrimes =
     sw.Flush()
     sw.Close()
 
-let toNum xs = xs |> List.mapi (fun i t -> (xs.Length - i - 1, t)) |> List.fold (fun acc (i, t) -> acc + (pow64 10L (int64(i))) * t) 0L
+let toNum xs = xs |> List.mapi (fun i t -> (xs.Length - i - 1, t)) |> List.fold (fun acc (i, t) -> acc + (pow 10 (i)) * t) 0
+
+let toNum64 xs = xs |> List.mapi (fun i t -> (xs.Length - i - 1, t)) |> List.fold (fun acc (i, t) -> acc + (pow64 10L (int64(i))) * t) 0L
 
 let combineDigits n1 n2 = 
     let mutable t = n1
