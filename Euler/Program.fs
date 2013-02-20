@@ -629,15 +629,29 @@ let problem49 () =
                 if List.isEmpty subList = false then yield subList }
     increasingPrimes |> Seq.filter (fun l -> l.Head <> 1487) |> Seq.head |> List.fold (fun acc t -> acc + (t.ToString())) ""
 
+// 997651
 let problem50 () = 
     let primes = primeGenFast 999999
+    let primesSums = 
+        primes 
+        |> Array.fold (fun acc t -> ((if acc.IsEmpty then 0L else acc.Head) + int64(t)) :: acc) [] 
+        |> List.filter (fun s -> s < 999999L)
+        |> List.rev 
+        |> List.toArray
+    let primesSet = primes |> Array.map (fun p -> int64(p)) |> Set.ofArray
+    seq { for i in 0..primesSums.Length - 2 do
+                    for j in i + 1..primesSums.Length - 1 do
+                        let sum = primesSums.[j] - primesSums.[i]
+                        if primesSet.Contains sum then yield sum } |> Seq.max
+
+let problem51 () =
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem50 ()
+    let r = problem51 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
