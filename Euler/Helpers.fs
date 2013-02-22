@@ -150,6 +150,16 @@ let isPanDig3 x y z = combineDigits x y |> combineDigits z |> isPanDig
 
 let primeGenFast rangeTo =
     let upperBound = int(Math.Sqrt (float(rangeTo))) + 1
+    let primeBits = new BitArray(rangeTo / 2 - 1, true)
+    for p in 3..2..upperBound do
+        if primeBits.Get ((p - 3) / 2) then
+            for pMult in (p * 3)..(2 * p)..rangeTo do
+                let i = (pMult - 3) / 2
+                primeBits.Set ((pMult - 3) / 2, false)
+    [| for i in -1..primeBits.Length - 1 do if i = -1 then yield 2 else if primeBits.Get i then yield (i * 2 + 3) |]
+
+let primeGenFastOld rangeTo =
+    let upperBound = int(Math.Sqrt (float(rangeTo))) + 1
     let primeBits = new BitArray(rangeTo + 1, true)
     primeBits.Set (0, false)
     primeBits.Set (1, false)

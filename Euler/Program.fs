@@ -645,7 +645,38 @@ let problem50 () =
                         let sum = primesSums.[j] - primesSums.[i]
                         if primesSet.Contains sum then yield sum } |> Seq.max
 
-<<<<<<< HEAD
+// 121313
+let problem51 () =
+    let primes = primeGenFast 999999 |> Array.filter (fun p -> p >= 100000)
+    let primesSet = primes |> Set.ofSeq
+    let rec getMasks d n = 
+        let updMask xs i =
+            if List.nth xs (i - 1) = true then []
+            else [ for n in 1..d -> if n = i then true else xs.[n - 1] ]
+        if n = 0 then [ [ for i in 1..d -> false ] ]
+        else getMasks d (n - 1) |> List.collect (fun mask -> [ for i in 1..d -> updMask mask i ]) |> Seq.filter (fun mask -> mask.IsEmpty = false) |> Seq.distinct |> Seq.toList
+    let applyMask bs n r = 
+        let rec loop bs n exp acc = 
+            match bs with
+            | true :: tl  -> loop tl (n / 10) (exp * 10) (acc - exp * (n % 10) + exp * r)
+            | false :: tl -> loop tl (n / 10) (exp * 10) acc
+            | []          -> acc
+        n + loop bs n 1 0
+    let r1 = applyMask [true; false; false ] 123 7
+    let r2 = applyMask [false; true; false ] 123 7
+    let r3 = applyMask [false; false; true ] 123 7
+    let r4 = applyMask [true; false; true ] 123 7
+    let getFamily mask p =
+        let family = [ for i in 0..9 -> applyMask mask p i ] |> List.filter (fun n -> primesSet.Contains n)
+        if family.Length = 8 then Some(family.Head) else None
+    seq { for m in 1..5 do
+            for mask in getMasks 7 m do
+                for p in primes do
+                    let family = getFamily mask p
+                    match family with
+                    | Some(p) -> yield p
+                    | None -> () } |> Seq.min
+
 // 142857
 let problem52 () =
     let isTheNumber n = 
@@ -785,45 +816,53 @@ let problem57 () =
             else loop (n + d * bigint(2), n + d) (i + 1) ((n + d * bigint(2), n + d) :: acc)
         loop (bigint 1, bigint 1) 1 [] |> List.rev
     take 1000 |> List.filter (fun (n, d) -> n.ToString().Length > d.ToString().Length) |> List.length
-=======
-// 121313
-let problem51 () =
-    let primes = primeGenFast 999999 |> Array.filter (fun p -> p >= 100000)
-    let primesSet = primes |> Set.ofSeq
-    let rec getMasks d n = 
-        let updMask xs i =
-            if List.nth xs (i - 1) = true then []
-            else [ for n in 1..d -> if n = i then true else xs.[n - 1] ]
-        if n = 0 then [ [ for i in 1..d -> false ] ]
-        else getMasks d (n - 1) |> List.collect (fun mask -> [ for i in 1..d -> updMask mask i ]) |> Seq.filter (fun mask -> mask.IsEmpty = false) |> Seq.distinct |> Seq.toList
-    let applyMask bs n r = 
-        let rec loop bs n exp acc = 
-            match bs with
-            | true :: tl  -> loop tl (n / 10) (exp * 10) (acc - exp * (n % 10) + exp * r)
-            | false :: tl -> loop tl (n / 10) (exp * 10) acc
-            | []          -> acc
-        n + loop bs n 1 0
-    let r1 = applyMask [true; false; false ] 123 7
-    let r2 = applyMask [false; true; false ] 123 7
-    let r3 = applyMask [false; false; true ] 123 7
-    let r4 = applyMask [true; false; true ] 123 7
-    let getFamily mask p =
-        let family = [ for i in 0..9 -> applyMask mask p i ] |> List.filter (fun n -> primesSet.Contains n)
-        if family.Length = 8 then Some(family.Head) else None
-    seq { for m in 1..5 do
-            for mask in getMasks 7 m do
-                for p in primes do
-                    let family = getFamily mask p
-                    match family with
-                    | Some(p) -> yield p
-                    | None -> () } |> Seq.min
->>>>>>> 20a898605841b7c879c249279a3e7da5578ed078
+
+// 26241
+let problem58 () =
+    let primes = primeGenFast 100000
+    let isPrime (p: int) =
+        let upperBound = int(Math.Sqrt (float(p))) + 1
+        let mutable i = 0
+        let mutable r = true
+        while r && primes.[i] <= upperBound do
+            if p % primes.[i] = 0 then r <- false
+            else i <- i + 1
+        r
+    let upperRight  n = (2 * n + 1) * (2 * n + 1) - 6 * n
+    let upperLeft   n = (2 * n + 1) * (2 * n + 1) - 4 * n
+    let lowerLeft   n = (2 * n + 1) * (2 * n + 1) - 2 * n
+    let rec loop n acc1 acc2 =
+        let check f = if f n |> isPrime then 1 else 0
+        let t = lowerLeft n
+        let totalPrimesCount = acc1 + check upperRight + check upperLeft + check lowerLeft
+        let totalCompCount = acc2 + 4
+        let ratio = totalPrimesCount * 100 / totalCompCount
+        if ratio < 10 then 2 * n + 1 else loop (n + 1) totalPrimesCount totalCompCount
+    loop 1 0 1
+
+// 107359
+let problem59 () =
+    let cypher = getLines "P59Input.txt" |> Array.map (fun s -> s.Split ',' |> Array.map (fun s -> Int32.Parse s)) |> Seq.head
+    let keyGen (c1: int) (c2: int) (c3: int) = Seq.initInfinite (fun i -> if i % 3 = 0 then c1 else if i % 3 = 1 then c2 else c3)
+    let text = seq { for c1 in Convert.ToInt32 'a'..Convert.ToInt32 'z' do
+                        for c2 in Convert.ToInt32 'a'..Convert.ToInt32 'z' do
+                            for c3 in Convert.ToInt32 'a'..Convert.ToInt32 'z' do
+                                let text = [| for i in 0..cypher.Length - 1 -> (if i % 3 = 0 then c1 else if i % 3 = 1 then c2 else c3) ^^^ cypher.[i] |> Convert.ToChar |]
+                                let index = text |> Seq.filter (fun c -> Char.IsLetter c || Char.IsWhiteSpace c) |> Seq.length
+                                if index > int(float(text.Length) * 0.95) then yield text } |> Seq.head
+    text |> Seq.map (fun c -> Convert.ToInt32 c) |> Seq.sum
+
+let problem60 () =
+    //let primes1 = primeGenFast 10000000
+    let primes2 = primeGenFast 10000000
+    //let diff = primes1 |> Set.ofArray |> Set.difference (primes2 |> Set.ofArray)
+    0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem57 ()
+    let r = problem60 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
