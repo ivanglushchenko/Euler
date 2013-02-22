@@ -645,6 +645,7 @@ let problem50 () =
                         let sum = primesSums.[j] - primesSums.[i]
                         if primesSet.Contains sum then yield sum } |> Seq.max
 
+<<<<<<< HEAD
 // 142857
 let problem52 () =
     let isTheNumber n = 
@@ -784,6 +785,39 @@ let problem57 () =
             else loop (n + d * bigint(2), n + d) (i + 1) ((n + d * bigint(2), n + d) :: acc)
         loop (bigint 1, bigint 1) 1 [] |> List.rev
     take 1000 |> List.filter (fun (n, d) -> n.ToString().Length > d.ToString().Length) |> List.length
+=======
+// 121313
+let problem51 () =
+    let primes = primeGenFast 999999 |> Array.filter (fun p -> p >= 100000)
+    let primesSet = primes |> Set.ofSeq
+    let rec getMasks d n = 
+        let updMask xs i =
+            if List.nth xs (i - 1) = true then []
+            else [ for n in 1..d -> if n = i then true else xs.[n - 1] ]
+        if n = 0 then [ [ for i in 1..d -> false ] ]
+        else getMasks d (n - 1) |> List.collect (fun mask -> [ for i in 1..d -> updMask mask i ]) |> Seq.filter (fun mask -> mask.IsEmpty = false) |> Seq.distinct |> Seq.toList
+    let applyMask bs n r = 
+        let rec loop bs n exp acc = 
+            match bs with
+            | true :: tl  -> loop tl (n / 10) (exp * 10) (acc - exp * (n % 10) + exp * r)
+            | false :: tl -> loop tl (n / 10) (exp * 10) acc
+            | []          -> acc
+        n + loop bs n 1 0
+    let r1 = applyMask [true; false; false ] 123 7
+    let r2 = applyMask [false; true; false ] 123 7
+    let r3 = applyMask [false; false; true ] 123 7
+    let r4 = applyMask [true; false; true ] 123 7
+    let getFamily mask p =
+        let family = [ for i in 0..9 -> applyMask mask p i ] |> List.filter (fun n -> primesSet.Contains n)
+        if family.Length = 8 then Some(family.Head) else None
+    seq { for m in 1..5 do
+            for mask in getMasks 7 m do
+                for p in primes do
+                    let family = getFamily mask p
+                    match family with
+                    | Some(p) -> yield p
+                    | None -> () } |> Seq.min
+>>>>>>> 20a898605841b7c879c249279a3e7da5578ed078
 
 [<EntryPoint>]
 [<System.STAThread>]
