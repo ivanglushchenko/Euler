@@ -1,6 +1,7 @@
 ﻿open Helpers
 open System
 open System.Collections
+open System.Numerics
 
 let problem1 () =
     seq { for n in 1..999 do if n % 3 = 0 || n % 5 = 0 then yield n } |> Seq.sum
@@ -180,7 +181,7 @@ let problem15 () =
     grid.[n - 1].[n - 1]
 
 let problem16 () = 
-    System.Numerics.BigInteger.Pow(bigint(2), 1000).ToString() |> Seq.map toInt |> Seq.sum
+    BigInteger.Pow(bigint(2), 1000).ToString() |> Seq.map toInt |> Seq.sum
 
 let problem17 () =
     let digitToString n = 
@@ -262,7 +263,7 @@ let problem19 () =
 let problem20 () =
     let rec facRec (n: bigint) c =
         if c <= 1 then n
-        else facRec (System.Numerics.BigInteger.Multiply(n, bigint(c))) (c - 1)
+        else facRec (BigInteger.Multiply(n, bigint(c))) (c - 1)
     let fac (n: int) = facRec (bigint(n)) (n - 1)
     (fac 100).ToString() |> Seq.map toInt |> Seq.sum
 
@@ -351,7 +352,7 @@ let problem29 () =
     let distinctNums =
         seq { for a in 2..100 do
                 for b in 2..100 do
-                    yield System.Numerics.BigInteger.Pow(bigint(a), b).ToString() } |> Set.ofSeq
+                    yield BigInteger.Pow(bigint(a), b).ToString() } |> Set.ofSeq
     distinctNums.Count
 
 // 443839
@@ -644,14 +645,151 @@ let problem50 () =
                         let sum = primesSums.[j] - primesSums.[i]
                         if primesSet.Contains sum then yield sum } |> Seq.max
 
-let problem51 () =
-    0
+// 142857
+let problem52 () =
+    let isTheNumber n = 
+        let digits = n |> getDigits |> List.sort
+        let rec loop m = 
+            if m = 7 then true
+            else
+                let t = n * m |> getDigits |> List.sort
+                if t = digits then loop (m + 1) else false
+        loop 2
+    Seq.initInfinite (fun i -> i + 1) |> Seq.filter isTheNumber |> Seq.head
+
+// 4075
+let problem53 () =
+    let factorials = 
+        seq { 1..100 } 
+        |> Seq.fold (fun acc n -> (n, (snd acc.Head) * bigint(n)) :: acc) [ (0, bigint(1)) ]
+        |> Map.ofSeq
+    let c n r = factorials.[n] / (factorials.[r] * factorials.[n - r])
+    let lowerBound = bigint(1000000)
+    seq { for n in 2..100 do
+            for r in 1..n - 1 do
+                let coef = c n r
+                if coef > lowerBound then yield coef } |> Seq.length
+
+// 376
+let problem54 () =
+    let group f hand = hand |> List.map f |> Seq.groupBy (fun i -> i) |> Seq.map (fun (k, v) -> (v |> Seq.length, k)) |> Seq.sortBy (fun (k, v) -> -k) |> List.ofSeq
+    let count f hand = group f hand |> List.map fst
+    let pick indices l = [ for i in indices -> List.nth l i |> snd ] |> List.sortBy (fun i -> -i)
+    let score hand indices = (group fst hand |> pick indices) @ (hand |> List.map fst)
+    let dist hand = hand |> List.tail |> List.map fst |> List.fold (fun acc t -> (t, if acc.IsEmpty then fst hand.Head - t else fst acc.Head - t) :: acc) [] |> List.map snd
+    let (|OnePair|_|) hand       = if count fst hand = [ 2; 1; 1; 1 ] then Some(score hand [ 0 ]) else None
+    let (|TwoPairs|_|) hand      = if count fst hand = [ 2; 2; 1 ] then Some(score hand [ 0; 1 ]) else None
+    let (|Three|_|) hand         = if count fst hand |> List.head = 3 then Some(score hand [ 0 ]) else None
+    let (|Straight|_|) hand      = if dist hand = [ 1; 1; 1; 1 ] then Some(fst hand.Head) else None
+    let (|Flush|_|) hand         = if count snd hand = [ 5 ] then Some(hand) else None
+    let (|FullHouse|_|) hand     = if count fst hand = [ 3; 2 ] then Some(score hand [ 0 ]) else None
+    let (|Four|_|) hand          = if count fst hand = [ 4; 1 ] then Some(score hand [ 0 ]) else None
+    let (|StraightFlush|_|) hand = if dist hand = [ 1; 1; 1; 1 ] && count snd hand = [ 5 ] then Some(fst hand.Head) else None
+    let (|RoyalFlush|_|) hand    = if dist hand = [ 1; 1; 1; 1 ] && count snd hand = [ 5 ] && fst hand.Head = 14 then Some(fst hand.Head) else None
+    let getSuit input = 
+        match input with
+        | 'H' -> 1
+        | 'S' -> 2
+        | 'C' -> 3
+        | _   -> 4
+    let getValue input =
+        match input with
+        | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' -> System.Int32.Parse (input.ToString())
+        | 'T' -> 10
+        | 'J' -> 11
+        | 'Q' -> 12
+        | 'K' -> 13
+        | _   -> 14
+    let getCard (c: string) = (getValue c.[0], getSuit c.[1])
+    let getHand cs = cs |> Array.map getCard |> Array.sortBy (fun (v, s) -> -v) |> List.ofArray
+    let isWinningHand (hand, adv) = 
+        match (hand, adv) with
+        | (RoyalFlush(_), _)  -> true
+        | (_, RoyalFlush(_))  -> false
+
+        | (StraightFlush(v1), StraightFlush(v2)) -> v1 > v2
+        | (StraightFlush(_), _) -> true
+        | (_, StraightFlush(_)) -> false
+
+        | (Four(v1), Four(v2)) -> v1 > v2
+        | (Four(_), _) -> true
+        | (_, Four(_)) -> false
+
+        | (FullHouse(v1), FullHouse(v2)) -> v1 > v2
+        | (FullHouse(_), _) -> true
+        | (_, FullHouse(_)) -> false
+
+        | (Flush(v1), Flush(v2)) -> v1 > v2
+        | (Flush(_), _) -> true
+        | (_, Flush(_)) -> false
+
+        | (Straight(v1), Straight(v2)) -> v1 > v2
+        | (Straight(_), _) -> true
+        | (_, Straight(_)) -> false
+
+        | (Three(v1), Three(v2)) -> v1 > v2
+        | (Three(_), _) -> true
+        | (_, Three(_)) -> false
+
+        | (TwoPairs(v1), TwoPairs(v2)) -> v1 > v2
+        | (TwoPairs(_), _) -> true
+        | (_, TwoPairs(_)) -> false
+        
+        | (OnePair(v1), OnePair(v2)) -> v1 > v2
+        | (OnePair(_), _) -> true
+        | (_, OnePair(_)) -> false
+
+        | _ -> fst hand.Head > fst adv.Head
+    getLines "P54Input.txt" 
+        |> Array.map (fun s -> s.Split ' ') 
+        |> Array.map (fun a -> (getHand a.[0..4], getHand a.[5..9]))
+        |> Array.filter isWinningHand 
+        |> Array.length
+
+// 249
+let problem55 () =
+    let isPalindrome n =
+        let s = n.ToString()
+        let rec loop i =
+            if i > s.Length / 2 then true
+            else if s.[i] <> s.[s.Length - 1 - i] then false
+            else loop (i + 1)
+        loop 0
+    let reverse n =
+        let a = n.ToString().ToCharArray()
+        Array.Reverse a
+        new String(a) |> bigint.Parse
+    let isLychrelNumber (n: int) =
+        let rec loop n i =
+            if i > 50 then true
+            else
+                let rev = reverse n
+                let sum = n + rev
+                if isPalindrome sum then false else loop sum (i + 1)
+        loop (bigint(n)) 1 
+    seq { 1..9999 } |> Seq.filter (fun n -> isLychrelNumber n) |> Seq.length
+
+// 972
+let problem56 () =
+    let getDigitsSum n = n.ToString() |> Seq.map (fun c -> Int32.Parse(c.ToString())) |> Seq.sum
+    seq { for a in 1..100 do
+            for b in 1..100 do
+                yield BigInteger.Pow(bigint(a), b) |> getDigitsSum } |> Seq.max
+
+// 153
+let problem57 () =
+    let take c =
+        let rec loop (n, d) i acc =
+            if i > c then acc
+            else loop (n + d * bigint(2), n + d) (i + 1) ((n + d * bigint(2), n + d) :: acc)
+        loop (bigint 1, bigint 1) 1 [] |> List.rev
+    take 1000 |> List.filter (fun (n, d) -> n.ToString().Length > d.ToString().Length) |> List.length
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem51 ()
+    let r = problem57 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
