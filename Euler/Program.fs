@@ -39,7 +39,7 @@ let problem5 () =
         match l with
         | hd :: tl -> 
             if p % hd <> 0L then
-                let t = gcd64 p hd
+                let t = gcd p hd
                 let r = hd / t
                 increase tl (p * r)
             else increase tl p

@@ -26,9 +26,10 @@ let getPrimes target f =
 
 let getAllPrimes target = getPrimes target (fun n -> true)
 
-let rec gcd a b = if b = 0 then abs a else gcd b (a % b)
-
-let rec gcd64 a b = if b = 0L then abs a else gcd64 b (a % b)
+let rec inline gcd (a: ^a) (b: ^a) : ^a = 
+    let zero: ^a = LanguagePrimitives.GenericZero
+    let rec compute (a: ^a) (b: ^a) = if b = zero then abs a else compute b ((a % b): ^a)
+    compute a b
 
 let getFactors target =
     let targetsr = int64(sqrt (float target))
