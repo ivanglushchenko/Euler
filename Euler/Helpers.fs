@@ -196,3 +196,25 @@ let getStringScore s =
         | hd :: tl -> loop tl (acc + System.Convert.ToInt32 hd - System.Convert.ToInt32 'A' + 1)
         | _        -> acc
     loop s 0
+
+let isPrime (primes: int[]) (p: int) =
+    if p = 1 then false
+    else
+        let upperBound = int(Math.Sqrt (float(p))) + 1
+        let mutable i = 0
+        let mutable r = true
+        while r && primes.[i] <= upperBound do
+            if p % primes.[i] = 0 then r <- false
+            else i <- i + 1
+        r
+
+let isPrime64 (primes: int64[]) (p: int64) =
+    if p = 1L then false
+    else
+        let upperBound = int64(Math.Sqrt (float(p))) + 1L
+        let mutable i = 0
+        let mutable r = true
+        while r && primes.[i] <= upperBound do
+            if p % primes.[i] = 0L then r <- false
+            else i <- i + 1
+        r

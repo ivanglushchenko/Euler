@@ -820,24 +820,16 @@ let problem57 () =
 // 26241
 let problem58 () =
     let primes = primeGenFast 100000
-    let isPrime (p: int) =
-        let upperBound = int(Math.Sqrt (float(p))) + 1
-        let mutable i = 0
-        let mutable r = true
-        while r && primes.[i] <= upperBound do
-            if p % primes.[i] = 0 then r <- false
-            else i <- i + 1
-        r
     let upperRight  n = (2 * n + 1) * (2 * n + 1) - 6 * n
     let upperLeft   n = (2 * n + 1) * (2 * n + 1) - 4 * n
     let lowerLeft   n = (2 * n + 1) * (2 * n + 1) - 2 * n
     let rec loop n acc1 acc2 =
-        let check f = if f n |> isPrime then 1 else 0
+        let check f = if f n |> isPrime primes then 1 else 0
         let t = lowerLeft n
         let totalPrimesCount = acc1 + check upperRight + check upperLeft + check lowerLeft
-        let totalCompCount = acc2 + 4
-        let ratio = totalPrimesCount * 100 / totalCompCount
-        if ratio < 10 then 2 * n + 1 else loop (n + 1) totalPrimesCount totalCompCount
+        let totalCount = acc2 + 4
+        let ratio = totalPrimesCount * 100 / totalCount
+        if ratio < 10 then 2 * n + 1 else loop (n + 1) totalPrimesCount totalCount
     loop 1 0 1
 
 // 107359
@@ -852,17 +844,55 @@ let problem59 () =
                                 if index > int(float(text.Length) * 0.95) then yield text } |> Seq.head
     text |> Seq.map (fun c -> Convert.ToInt32 c) |> Seq.sum
 
+// 26033
 let problem60 () =
-    //let primes1 = primeGenFast 10000000
-    let primes2 = primeGenFast 10000000
-    //let diff = primes1 |> Set.ofArray |> Set.difference (primes2 |> Set.ofArray)
+    let upperBound = 20000
+    let primes = primeGenFast 10000000 |> Array.map (fun p -> int64 p)
+    let primesSet = primes |> Set.ofArray
+    let maxKnownPrime = primes |> Array.max
+    let prime p = if p < maxKnownPrime then primesSet.Contains p else isPrime64 primes p
+    let isRemarkablePair p1 p2 = prime (combineDigits (int64 p1) (int64 p2)) && prime (combineDigits (int64 p2) (int64 p1))
+    let primesToConsider = primes |> Array.filter (fun p -> p < int64 upperBound)
+    seq { for p1 in primesToConsider do
+            for p2 in primesToConsider do
+                if p2 > p1 && isRemarkablePair p1 p2 then
+                    for p3 in primesToConsider do
+                        if p3 > p2 && isRemarkablePair p1 p3 && isRemarkablePair p2 p3 then
+                            for p4 in primesToConsider do
+                                if p4 > p3 && isRemarkablePair p1 p4 && isRemarkablePair p2 p4 && isRemarkablePair p3 p4 then
+                                    for p5 in primesToConsider do
+                                        if p5 > p4 && isRemarkablePair p1 p5 && isRemarkablePair p2 p5 && isRemarkablePair p3 p5 && isRemarkablePair p4 p5 then
+                                            yield p1 + p2 + p3 + p4 + p5 } |> Seq.min
+
+// 28684
+let problem61 () =
+    let generate f = seq { for n in 1..1000 -> f n } |> Seq.filter (fun n -> n >= 1000 && n <= 9999) |> Seq.map (fun n -> (n / 100, (n % 100, n))) |> Map.ofSeq
+    let triangleNums = generate (fun n -> n * (n + 1) / 2)
+    let squareNums = generate (fun n -> n * n)
+    let pentagonalNums = generate (fun n -> n * (3 * n - 1) / 2)
+    let hexagonalNums = generate (fun n -> n * (2 * n - 1))
+    let heptagonalNums = generate (fun n -> n * (5 * n - 3) / 2)
+    let octagonalNums = generate (fun n -> n * (3 * n - 2))
+
+    let merge g1 g2 = g1 |> Map.filter (fun k v -> Map.containsKey (fst v) g2) |> Map.map (fun k v -> (fst g2.[fst v], snd v + snd g2.[fst v]))
+
+    let mergeMany gs = gs |> List.tail |> List.fold (fun acc g -> merge acc g) gs.Head
+
+    getPermutations [ triangleNums; squareNums; pentagonalNums; hexagonalNums; heptagonalNums; octagonalNums ]
+        |> List.map mergeMany
+        |> List.collect (fun t -> t |> Map.toList)
+        |> List.filter (fun (f, (t, c)) -> f = t)
+        |> List.map (snd >> snd)
+        |> List.max
+
+let problem62 () = 
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem60 ()
+    let r = problem61 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
