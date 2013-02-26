@@ -28,7 +28,6 @@ let problem4 () =
                             for y in all3Digits do
                                 let prod = x * y
                                 if isPoly prod then yield prod |]
-
     allProducts |> Array.max
 
 let problem5 () = 
@@ -885,14 +884,112 @@ let problem61 () =
         |> List.map (snd >> snd)
         |> List.max
 
+// 5027
 let problem62 () = 
-    0
+    let upperBound = 10000
+    let digitsOf n = 
+        n.ToString() 
+        |> Seq.map (fun c -> c.ToString() |> Int32.Parse) 
+        |> Seq.groupBy (fun c -> c) 
+        |> Seq.map (fun (k, v) -> (k, v |> Seq.length)) 
+        |> Seq.sort
+        |> List.ofSeq
+    seq { for n in 1..upperBound -> (n, BigInteger.Pow(bigint n, 3)) }
+        |> Seq.map (fun (k, v) -> (k, digitsOf v))
+        |> Seq.groupBy (fun (k, v) -> v) 
+        |> Seq.filter (fun (k, v) -> v |> Seq.length = 5)
+        |> Seq.map (fun (k, v) -> v |> Seq.map fst |> Seq.min)
+        |> Seq.min
+
+// 49
+let problem63 () =
+    seq { for n in 0L..9L do
+            for p in 1L..100L do
+                let num = pow64 n p
+                if num.ToString().Length |> int64 = p then yield 1 } |> Seq.sum
+
+// 1322
+let problem64 () =
+    let periodOf s =
+        let a0 = int (Math.Sqrt (float s))
+        if a0 * a0 = s then 0 else
+            let rec loop (m, d, a) visited =
+                let mNext = d * a - m
+                let dNext = (s - mNext * mNext) / d
+                let aNext = (a0 + mNext) / dNext
+                if visited |> Set.contains (mNext, dNext, aNext) then visited |> Seq.length
+                else loop (mNext, dNext, aNext) (visited.Add (mNext, dNext, aNext))
+            loop (0, 1, (int (Math.Sqrt (float s)))) Set.empty
+    let t = periodOf 7
+    seq { for n in 2..10000 -> periodOf n } |> Seq.filter (fun p -> p > 0 && p % 2 = 1) |> Seq.length
+
+// 272
+let problem65 () =
+    let convergents = [| for n in 1..100 -> bigint 0 |]
+    for i in 1..100 do
+        convergents.[i - 1] <-
+            match i with
+            | 1 -> bigint 2
+            | 2 -> bigint 3
+            | _ -> 
+                if i % 3 = 0 then (bigint 2) * (bigint (i / 3)) * convergents.[i - 2] + convergents.[i - 3]
+                else convergents.[i - 2] + convergents.[i - 3]
+    convergents.[99].ToString() |> Seq.map (fun c -> c.ToString() |> Int32.Parse) |> Seq.sum
+
+// 661
+let problem66 () =
+    let getFundamentalSolution D =
+        let a0 = bigint (Math.Sqrt (float D))
+        if a0 * a0 = D then (bigint 0, bigint 0) else
+            let rec loop (m, d, a) (n1, n2) (d1, d2) =
+                let mNext = d * a - m
+                let dNext = (D - mNext * mNext) / d
+                let aNext = (a0 + mNext) / dNext
+                let numNext = aNext * n1 + n2
+                let denNext = aNext * d1 + d2
+                if numNext * numNext - D * denNext * denNext = BigInteger.One then (numNext, D)
+                else loop (mNext, dNext, aNext) (numNext, n1) (denNext, d1)
+            loop (bigint 0, bigint 1, a0) (a0, bigint 1) (bigint 1, bigint 0)
+    seq { for D in 1..1000 -> 
+            getFundamentalSolution (bigint D) } |> Seq.maxBy (fun (x, d) -> x) |> snd
+
+// 7273
+let problem67 () =
+    let lines = loadMatrix "P67Input.txt"
+    let n = lines.Length
+    let grid = [| for i in 1..n -> [| for j in 1..n -> 0L |] |]
+    grid.[0].[0] <- lines.[0].[0]
+    for i in 2..n do
+        for j in 1..i do
+            let m1 = if i > j then lines.[i - 1].[j - 1] + grid.[i - 2].[j - 1] else 0L
+            let m2 = if j > 1 then lines.[i - 1].[j - 1] + grid.[i - 2].[j - 2] else 0L
+            grid.[i - 1].[j - 1] <- max m1 m2
+    grid.[n - 1] |> Array.max
+
+// 6531031914842725
+let problem68 () =
+    let validateSums (vs: int[]) = 
+        let s1 = vs.[0] + vs.[5] + vs.[6]
+        let s2 = vs.[1] + vs.[6] + vs.[7]
+        if s1 = s2 then
+            let s3 = vs.[2] + vs.[7] + vs.[8]
+            if s2 = s3 then
+                let s4 = vs.[3] + vs.[8] + vs.[9]
+                if s3 = s4 then
+                    let s5 = vs.[4] + vs.[9] + vs.[5]
+                    s4 = s5 && s5 = s1
+                else false
+            else false
+        else false
+                    
+    let sln = getPermutations [ 10; 9; 8; 7; 5; 4; 3; 2; 1 ] |> List.map (fun l -> 6 :: l |> List.toArray) |> List.filter validateSums |> List.max
+    sprintf "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i" sln.[0]  sln.[5]  sln.[6] sln.[1] sln.[6] sln.[7] sln.[2] sln.[7] sln.[8] sln.[3] sln.[8] sln.[9] sln.[4] sln.[9] sln.[5]
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem61 ()
+    let r = problem68 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
