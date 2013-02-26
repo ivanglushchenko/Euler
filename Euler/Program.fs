@@ -884,7 +884,7 @@ let problem61 () =
         |> List.map (snd >> snd)
         |> List.max
 
-// 5027
+// 127035954683
 let problem62 () = 
     let upperBound = 10000
     let digitsOf n = 
@@ -894,12 +894,14 @@ let problem62 () =
         |> Seq.map (fun (k, v) -> (k, v |> Seq.length)) 
         |> Seq.sort
         |> List.ofSeq
-    seq { for n in 1..upperBound -> (n, BigInteger.Pow(bigint n, 3)) }
+    let cube = 
+        seq { for n in 1..upperBound -> (n, BigInteger.Pow(bigint n, 3)) }
         |> Seq.map (fun (k, v) -> (k, digitsOf v))
         |> Seq.groupBy (fun (k, v) -> v) 
         |> Seq.filter (fun (k, v) -> v |> Seq.length = 5)
         |> Seq.map (fun (k, v) -> v |> Seq.map fst |> Seq.min)
         |> Seq.min
+    BigInteger.Pow(bigint  cube, 3)
 
 // 49
 let problem63 () =
@@ -989,7 +991,7 @@ let problem68 () =
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem68 ()
+    let r = problem62 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
