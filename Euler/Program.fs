@@ -987,11 +987,43 @@ let problem68 () =
     let sln = getPermutations [ 10; 9; 8; 7; 5; 4; 3; 2; 1 ] |> List.map (fun l -> 6 :: l |> List.toArray) |> List.filter validateSums |> List.max
     sprintf "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i" sln.[0]  sln.[5]  sln.[6] sln.[1] sln.[6] sln.[7] sln.[2] sln.[7] sln.[8] sln.[3] sln.[8] sln.[9] sln.[4] sln.[9] sln.[5]
 
+// 510510
+let problem69 () =
+    let upperBound = 1000000
+    let primes = primeGenFast 1000 |> List.ofArray
+    let rec increaseProduct num prod primes =
+        let nextPrime = primes |> List.head
+        let nextNum = num * nextPrime
+        if nextNum > upperBound then num
+        else increaseProduct nextNum ((1.0 - 1.0 / (nextPrime |> float)) * prod) (primes |> List.tail)
+    increaseProduct 1 1.0 primes
+
+// 8319823
+let problem70 () =
+    let upperBound = 10000000
+    let primes = primeGenFast 10000
+    let getPhi p1 p2 = (p1 - 1) * (p2 - 1)
+    let digitsOf d = d.ToString() |> Seq.groupBy (fun c -> c) |> Seq.map (fun (k, v) -> (k, v |> Seq.length)) |> Seq.sort |> Seq.toList
+    seq { for p1 in primes do
+            for p2 in primes do
+                let num = p1 * p2
+                if p1 <> p2 && num <= upperBound then
+                    let phi = getPhi p1 p2
+                    if digitsOf num = digitsOf phi then yield (num, float num / float phi) } |> Seq.minBy snd |> fst
+
+let problem71 () =
+    let upperBound = 1000000
+    let lessThanTarget n d = 7 * n < 3 * d
+    let (n_ceil, d_ceil) = (upperBound, 1)
+
+    //let isBigger 
+    0
+
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem62 ()
+    let r = problem71 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
