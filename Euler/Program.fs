@@ -1012,12 +1012,21 @@ let problem70 () =
                     if digitsOf num = digitsOf phi then yield (num, float num / float phi) } |> Seq.minBy snd |> fst
 
 let problem71 () =
-    let upperBound = 1000000
-    let lessThanTarget n d = 7 * n < 3 * d
-    let (n_ceil, d_ceil) = (upperBound, 1)
-
-    //let isBigger 
-    0
+    let lessThan n1 d1 n2 d2 = d2 * n1 < n2 * d1
+    let lessThanTarget n d = lessThan n d 3 7
+    let rec nextApproximation d bestNum bestDen =
+        if d > 1000000 then bestNum
+        else
+            let lowerBound = 3 * d / 7
+            let rec iterateThroughNums n =
+                if lessThanTarget n d then
+                    if lessThan n d bestNum bestDen then iterateThroughNums (n + 1) 
+                    else  Some(n)
+                else None
+            match iterateThroughNums lowerBound with
+            | Some(n) -> nextApproximation (d + 1) lowerBound d
+            | None    -> nextApproximation (d + 1) bestNum bestDen
+    nextApproximation 1 0 1
 
 [<EntryPoint>]
 [<System.STAThread>]
