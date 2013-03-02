@@ -1011,6 +1011,7 @@ let problem70 () =
                     let phi = getPhi p1 p2
                     if digitsOf num = digitsOf phi then yield (num, float num / float phi) } |> Seq.minBy snd |> fst
 
+// 428570
 let problem71 () =
     let lessThan n1 d1 n2 d2 = d2 * n1 < n2 * d1
     let lessThanTarget n d = lessThan n d 3 7
@@ -1028,11 +1029,57 @@ let problem71 () =
             | None    -> nextApproximation (d + 1) bestNum bestDen
     nextApproximation 1 0 1
 
+// 303963552391
+let problem72 () =
+    let primes = primeGenFast 1000000 |> Array.map (fun p -> int64 p)
+    seq { for n in 2L..1000000L -> getPrimeDivisors n primes 
+                                    |> List.map fst
+                                    |> List.fold (fun acc p -> acc * (1.0 - 1.0 / (float p))) (float n)
+                                    |> int64
+                                    } |> Seq.sum
+
+// 7295372
+// This method heavily relies on tail recursion, so use release conf (or use --tailcalls)
+let problem73 () =
+    let isLess (a, b) (c, d) = a * d < c * b
+    let n = 12000
+    let nextFarey (a, b) (c, d) = 
+        let k = int((n + b) / d)
+        (k * c - a, k * d - b)
+    let rec countFareys (a, b) (c, d) count = 
+        let next = nextFarey (a, b) (c, d)
+        if isLess (1, 2) next then count
+        else countFareys (c, d) next (if isLess (1, 3) next then count + 1 else count)
+    (countFareys (0, 1) (1, n) 0) - 1
+
+// 402
+let problem74 () = 
+    let factorials = [| 1L; 1L; 2L; 6L; 24L; 120L; 720L; 5040L; 40320L; 362880L |]
+    let factorialsSum n = getDigits64 n |> List.map (fun d -> factorials.[int d]) |> List.sum
+    let rec calcChainLength lengths n = 
+        if lengths |> Map.containsKey n then lengths
+        else
+            let sum = factorialsSum n
+            if sum = n then Map.add n 0L lengths
+            else
+                let lengths = calcChainLength (Map.add n (0L) lengths) sum
+                Map.add n (lengths.[sum] + 1L) lengths
+    seq { 1L..1000000L } 
+        |> Seq.fold calcChainLength Map.empty 
+        |> Map.toSeq 
+        |> Seq.filter (fun (k, v) -> v >= 60L) 
+        |> Seq.length
+
+let problem75 () =
+    let n = 1500000
+    let a = Math.Sqrt (float n)
+    0
+
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem71 ()
+    let r = problem75 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
