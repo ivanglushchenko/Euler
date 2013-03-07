@@ -1070,16 +1070,64 @@ let problem74 () =
         |> Seq.filter (fun (k, v) -> v >= 60L) 
         |> Seq.length
 
+// 161667
 let problem75 () =
-    let n = 1500000
-    let a = Math.Sqrt (float n)
+    let upperBound = 1500000
+    let a = Math.Sqrt (float upperBound) |> int
+    let getTriplet m n = (m * m - n * n, 2 * m * n, m * m + n * n)
+    seq { for m in 2..a do
+            for n in 1..m - 1 do
+                if (m + n) % 2 = 1 && gcd n m = 1 then yield getTriplet m n } 
+                |> Seq.collect (fun (a, b, c) ->
+                    let rec getAllTriplets k acc = 
+                        if a * k + b * k + c * k > upperBound then acc
+                        else getAllTriplets (k + 1) ((a * k, b * k, c * k) :: acc)
+                    getAllTriplets 1 []) 
+                |> Seq.groupBy (fun (a, b, c) -> a + b + c) 
+                |> Seq.filter (fun (k, v) -> v |> Seq.length = 1) 
+                |> Seq.length
+
+// 190569291
+let problem76 () =
+    let sum = 100
+    let solutions = [| for i in 0..sum -> if i = 0 then 1 else 0 |]
+    let rec processNextCoin coins =
+        match coins with
+        | coin :: tl ->
+            for i in coin..sum do
+                solutions.[i] <- solutions.[i] + solutions.[i - coin]
+            processNextCoin tl
+        | _ -> solutions
+    Array.get (processNextCoin [ 1..99 ]) sum
+
+// 71
+let problem77 () =
+    let primes = primeGenFast 5000 |> List.ofArray
+    let getMaxSolution sum = 
+        printfn "%i" sum
+        let solutions = [| for i in 0..sum -> if i = 0 then 1 else 0 |]
+        let rec processNextCoin coins =
+            match coins with
+            | coin :: tl ->
+                for i in coin..sum do
+                    solutions.[i] <- solutions.[i] + solutions.[i - coin]
+                processNextCoin tl
+            | _ -> solutions    
+        processNextCoin primes
+    let rec getFirst5kSln n =
+        let sln = getMaxSolution n
+        if sln |> Array.exists (fun t -> t > 5000) then n
+        else getFirst5kSln (n + 1)
+    getFirst5kSln 1
+
+let problem78 () =
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem75 ()
+    let r = problem78 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
