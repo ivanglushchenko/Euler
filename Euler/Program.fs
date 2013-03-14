@@ -1104,7 +1104,6 @@ let problem76 () =
 let problem77 () =
     let primes = primeGenFast 5000 |> List.ofArray
     let getMaxSolution sum = 
-        printfn "%i" sum
         let solutions = [| for i in 0..sum -> if i = 0 then 1 else 0 |]
         let rec processNextCoin coins =
             match coins with
@@ -1120,14 +1119,46 @@ let problem77 () =
         else getFirst5kSln (n + 1)
     getFirst5kSln 1
 
+// 55374
 let problem78 () =
+    let findNum f = 
+        let rec checkNextNumber k (cache: Map<int, bigint>) =
+            let rec loop m acc =
+                let n = (3 * m - 1) * m / 2
+                let res = if n > k then bigint 0 else cache.[k - n]
+                let sign = if m % 2 = 0 then bigint -1 else bigint 1
+                if res > bigint 0 then 
+                    if m < 0 then loop (-m + 1) (acc + res * sign)
+                    else loop -m (acc + res * sign)
+                else acc
+            let res = loop 1 (bigint 0)
+            if f k res then k
+            else checkNextNumber (k + 1) (Map.add k res cache)
+        Map.ofList [(0, bigint 1)] |> checkNextNumber 1
+    findNum (fun i p -> p % (bigint 1000000) = bigint 0)
+
+// 73162890
+let problem79 () =
+    let constraints = getLines "P79Input.txt" |> Array.map (fun t -> t |> Seq.map toInt |> Seq.toList) |> Array.toList
+    let rec satisfies d c =
+        match (d, c) with
+        | (_, []) -> true
+        | ([], _) -> false
+        | (nextDigit :: tl1, nextPin :: tl2) -> if nextDigit = nextPin then satisfies d tl2 else satisfies tl1 c
+    let rec checkNext n =
+        let digits = n |> getDigits
+        if constraints |> List.forall (fun c -> satisfies digits c) then n
+        else checkNext (n + 1)
+    checkNext 1000
+
+let problem80 () = 
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem78 ()
+    let r = problem80 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
