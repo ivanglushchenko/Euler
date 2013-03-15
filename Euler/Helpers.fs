@@ -39,12 +39,14 @@ let toInt c = System.Int32.Parse(c.ToString())
 
 let getLines s = System.IO.File.ReadAllLines s
 
-let loadMatrix fn = 
+let loadMatrixSep fn (c: char) = 
     let toArray (s: string) = 
-        s.Split ' ' 
+        s.Split c
             |> Array.filter (fun t -> System.String.IsNullOrWhiteSpace t = false) 
             |> Array.map (fun t -> System.Int64.Parse t)
     getLines fn |> Array.map toArray
+
+let loadMatrix fn = loadMatrixSep fn ' '
 
 let pow n p = int(System.Math.Pow(float(n), float(p)))
 

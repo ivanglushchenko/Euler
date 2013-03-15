@@ -1151,14 +1151,128 @@ let problem79 () =
         else checkNext (n + 1)
     checkNext 1000
 
+// 40886
 let problem80 () = 
+    let isPerfectSquare n =
+        let sq = int (Math.Sqrt (float n))
+        sq * sq = n
+    let getSum (n: int) =
+        let mutable a = (bigint n) * (bigint 5)
+        let mutable b = bigint 5
+        for i in 1..2000 do
+            if a >= b then
+                a <- a - b
+                b <- b + bigint 10
+            else
+                a <- a * bigint 100
+                let (d, r) = (b / bigint 10, b % bigint 10)
+                b <- d * bigint 100 + r
+        b.ToString() |> Seq.map toInt |> Seq.take 100 |> Seq.sum
+    [ 2..99 ] |> List.filter (fun n -> isPerfectSquare n = false) |> List.map getSum |> List.sum
+
+// 427337
+let problem81 () =
+    let m = loadMatrixSep "P81Input.txt" ','
+    let n = m.Length
+    let grid = [| for i in 1..n -> [| for j in 1..n -> 0L |] |]
+    grid.[0].[0] <- m.[0].[0]
+    for i in 1..n do
+        for j in 1..n do
+            if i <> 1 || j <> 1 then
+                let m1 = if i > 1 then grid.[i - 2].[j - 1] else Int64.MaxValue
+                let m2 = if j > 1 then grid.[i - 1].[j - 2] else Int64.MaxValue
+                grid.[i - 1].[j - 1] <- m.[i - 1].[j - 1] + (min m1 m2)
+    grid.[n - 1].[n - 1]
+
+// 260324
+let problem82 () =
+    let m = loadMatrixSep "P82Input.txt" ','
+    let maxEl = 1000000000L
+    let n = m.Length
+    let grid = [| for i in 1..n -> [| for j in 1..n -> if j = 1 then m.[i - 1].[0] else maxEl |] |]
+    for j in 2..n do
+        let mutable keepLooping = true
+        while keepLooping do
+            let mutable hasChanges = false
+            for i in 1..n do
+                let m1 = if i > 1 then grid.[i - 2].[j - 1] else maxEl
+                let m2 = if i < n then grid.[i].[j - 1] else maxEl
+                let m3 = grid.[i - 1].[j - 2]
+                let t = m.[i - 1].[j - 1] + min m1 (min m2 m3)
+                if grid.[i - 1].[j - 1] > t then
+                    hasChanges <- true
+                    grid.[i - 1].[j - 1] <- t
+            if hasChanges = false then keepLooping <- false
+    grid |> Array.map (fun a -> a.[n - 1]) |> Array.min
+
+// 425185
+let problem83 () =
+    let m = loadMatrixSep "P83Input.txt" ','
+    let n = m.Length
+    let getNeightbours (x, y) =
+        let neightbour (hor, vert) = if x + hor >= 0 && x + hor < n && y + vert >= 0 && y + vert < n then Some(x + hor, y + vert) else None
+        [(-1, 0); (1, 0); (0, -1); (0, 1)] |> List.choose neightbour
+    let rec loop visited costs candidates =
+        if candidates |> Set.count = 0 then costs |> Map.find (n - 1, n - 1)
+        else
+            let nextMin = Set.minElement candidates
+            let newVisited = visited |> Set.add (snd nextMin)
+            let newCosts = costs |> Map.add (snd nextMin) (fst nextMin)
+            let neightbours = 
+                getNeightbours (snd nextMin) 
+                |> List.filter (fun t -> visited.Contains t = false)
+                |> List.map (fun t -> (fst nextMin + m.[fst t].[snd t], t))
+                |> Set.ofList
+            let newCandidates = candidates |> Set.filter (fun (c, (i, j)) -> (i, j) <> snd nextMin) |> Set.union neightbours
+            loop newVisited newCosts newCandidates
+    let visited = Set.ofList [(0, 0)]
+    let costs = Map.ofList [((0, 0), m.[0].[0])]
+    let candidates = Set.ofList [(m.[0].[0] + m.[1].[0], (1, 0)); (m.[0].[0] + m.[0].[1], (0, 1))]
+    loop visited costs candidates
+
+let problem84() = 
+    let rand = new System.Random()
+    let swap (a: _[]) x y =
+        let tmp = a.[x]
+        a.[x] <- a.[y]
+        a.[y] <- tmp
+    let shuffle a = Array.iteri (fun i _ -> swap a i (rand.Next(i, Array.length a))) a
+    let visits = [| 0..39 |]
+    let goto i = fun _ -> i
+    let gotoR = fun i -> match i with
+                            | _ when i >= 5  && i < 15 -> 15
+                            | _ when i >= 15 && i < 25 -> 25
+                            | _ when i >= 25 && i < 35 -> 35
+                            | _ -> 5
+    let gotoU = fun i -> if i >= 12 && i < 28 then 28 else 12
+    let ccDeck = [ for i in 3..16 -> (fun (i: int) -> i) ] @ [ goto 0; goto 10; ]
+    let chDeck = [ for i in 11..16 -> (fun (i: int) -> i) ] @ [
+                    goto 0;
+                    goto 10;
+                    goto 11;
+                    goto 24;
+                    goto 39;
+                    goto 5;
+                    gotoR;
+                    gotoR;
+                    fun i -> if i >= 12 && i < 28 then 28 else 12
+                    fun i -> (i + 37) % 40]
+
+    let sim pos = 
+        let dice = 2 + rand.Next 6 + rand.Next 6
+        (pos + dice) % 40
+
+    let mutable pos = 0
+    for _ in 1..1000000 do
+        pos <- sim pos
+        visits.[pos] <- visits.[pos] + 1
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem80 ()
+    let r = problem84 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
