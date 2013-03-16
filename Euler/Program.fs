@@ -1230,6 +1230,7 @@ let problem83 () =
     let candidates = Set.ofList [(m.[0].[0] + m.[1].[0], (1, 0)); (m.[0].[0] + m.[0].[1], (0, 1))]
     loop visited costs candidates
 
+// [ 10 ;  15 ;  24 ]
 let problem84() = 
     let rand = new System.Random()
     let swap (a: _[]) x y =
@@ -1237,7 +1238,7 @@ let problem84() =
         a.[x] <- a.[y]
         a.[y] <- tmp
     let shuffle a = Array.iteri (fun i _ -> swap a i (rand.Next(i, Array.length a))) a
-    let visits = [| 0..39 |]
+    let visits = [| for i in 0..39 -> 0 |]
     let goto i = fun _ -> i
     let gotoR = fun i -> match i with
                             | _ when i >= 5  && i < 15 -> 15
@@ -1257,22 +1258,32 @@ let problem84() =
                     gotoR;
                     fun i -> if i >= 12 && i < 28 then 28 else 12
                     fun i -> (i + 37) % 40]
-
-    let sim pos = 
-        let dice = 2 + rand.Next 6 + rand.Next 6
-        (pos + dice) % 40
-
-    let mutable pos = 0
-    for _ in 1..1000000 do
-        pos <- sim pos
+    let playDeck i deck = ((deck |> List.head) i, List.append (deck |> List.tail) [ deck |> List.head ])
+    let rec sim pos ccDeck chDeck doubles i =
         visits.[pos] <- visits.[pos] + 1
+        if i = 0 then
+            visits |> Array.mapi (fun i k -> (-k, i)) |> Array.sortBy fst |> Seq.take 3 |> Seq.map snd |> Seq.toList
+        else
+            let roll1 = 1 + rand.Next 4
+            let roll2 = 1 + rand.Next 4
+            if roll1 = roll2 && doubles = 2 then 
+                sim 10 ccDeck chDeck 0 (i - 1)
+            else
+                let pos = (pos + roll1 + roll2) % 40
+                let (pos, chDeck) = if pos = 7 || pos = 22 || pos = 36 then playDeck pos chDeck else (pos, chDeck)
+                let (pos, ccDeck) = if pos = 2 || pos = 17 || pos = 33 then playDeck pos ccDeck else (pos, ccDeck)
+                let pos = if pos = 30 then 10 else pos
+                sim pos ccDeck chDeck (if roll1 = roll2 then doubles + 1 else 0) (i - 1)
+    sim 0 ccDeck chDeck 0 10000000
+
+let problem85 () =
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem84 ()
+    let r = problem85 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
