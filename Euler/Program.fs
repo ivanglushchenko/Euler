@@ -1276,14 +1276,25 @@ let problem84() =
                 sim pos ccDeck chDeck (if roll1 = roll2 then doubles + 1 else 0) (i - 1)
     sim 0 ccDeck chDeck 0 10000000
 
+// 2772
 let problem85 () =
+    seq { for x in 1..2000 do
+            for y in 1..2000 do
+                let count = x * (x + 1) * y * (y + 1) / 4
+                yield (Math.Abs(2000000 - count), x * y) } |> Seq.sort |> Seq.head |> snd
+
+let problem86 () =
+    //let rec loop m count =
+    //    if count > 2000 then m
+    //    else
+            
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem85 ()
+    let r = problem86 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
