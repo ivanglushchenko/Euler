@@ -1283,10 +1283,69 @@ let problem85 () =
                 let count = x * (x + 1) * y * (y + 1) / 4
                 yield (Math.Abs(2000000 - count), x * y) } |> Seq.sort |> Seq.head |> snd
 
+// 1818
 let problem86 () =
-    //let rec loop m count =
-    //    if count > 2000 then m
-    //    else
+    let rec loop m count =
+        if count > 1000000 then m - 1
+        else
+            let s = seq { for s1 in 1..m do
+                            for s2 in s1..m do
+                                let lSquared = m * m + (s1 + s2) * (s1 + s2)
+                                let l = Math.Sqrt(float lSquared) |> int
+                                if l * l = lSquared then yield 1 } |> Seq.sum
+            loop (m + 1) (count + s)
+    loop 1 0
+
+// 1097343
+let problem87 () =
+    let upperBound = 50000000L
+    let primes = primeGenFast 10000 |> Array.map int64
+    let squares = primes |> Array.map (fun n -> n * n)
+    let cubes = primes |> Array.map (fun n -> n * n * n) |> Array.filter (fun n -> n < upperBound)
+    let fourths = primes |> Array.map (fun n -> n * n * n * n) |> Array.filter (fun n -> n < upperBound)
+    let nums = System.Collections.Generic.HashSet<int64>()
+    for s1 in squares do
+        if s1 < upperBound then
+            for s2 in cubes do
+                if s1 + s2 < upperBound then
+                    for s3 in fourths do
+                        if s1 + s2 + s3 < upperBound then nums.Add(s1 + s2 + s3) |> ignore
+    nums.Count
+
+//A natural number, N, that can be written as the sum and product of a given set of at least two natural numbers, {a1, a2, … , ak} 
+//is called a product-sum number: N = a1 + a2 + … + ak = a1 x a2 x … x ak.
+//For example, 6 = 1 + 2 + 3 = 1 x 2 x 3.
+//For a given set of size, k, we shall call the smallest N with this property a minimal product-sum number. 
+//The minimal product-sum numbers for sets of size, k = 2, 3, 4, 5, and 6 are as follows.
+//k=2: 4 = 2 x 2 = 2 + 2
+//k=3: 6 = 1 x 2 x 3 = 1 + 2 + 3
+//k=4: 8 = 1 x 1 x 2 x 4 = 1 + 1 + 2 + 4
+//k=5: 8 = 1 x 1 x 2 x 2 x 2 = 1 + 1 + 2 + 2 + 2
+//k=6: 12 = 1 x 1 x 1 x 1 x 2 x 6 = 1 + 1 + 1 + 1 + 2 + 6
+//Hence for 2≤k≤6, the sum of all the minimal product-sum numbers is 4+6+8+12 = 30; note that 8 is only counted once in the sum.
+//In fact, as the complete set of minimal product-sum numbers for 2≤k≤12 is {4, 6, 8, 12, 15, 16}, the sum is 61.
+//What is the sum of all the minimal product-sum numbers for 2≤k≤12000?
+let problem88 () =
+    let k = 12000
+    let upperBound = k * 2
+    let genFactors =
+        let rec loop factors prod acc = 
+            if prod >= upperBound then
+                if 2 * (Array.length factors + 1) > upperBound then acc
+                else
+                    let nextSmallestFactors = Array.create (Array.length factors + 1) 2
+                    loop nextSmallestFactors (2 * nextSmallestFactors.Length) (nextSmallestFactors :: acc)
+            else
+                acc
+        //loop [| upperBound |] upperBound []
+        0
+
+    let foreach f factors =
+        let prod = factors |> Array.fold (fun acc n -> acc * n) 1
+        if prod <= upperBound then
+            f factors
+
+            
             
     0
 
@@ -1294,7 +1353,7 @@ let problem86 () =
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem86 ()
+    let r = problem88 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
