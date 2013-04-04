@@ -34,6 +34,7 @@ let problem5 () =
     let nums = [ 1L..20L ]
     let primes = getAllPrimes 20L
     let prod = primes |> List.fold (fun acc p -> acc * p) 1L
+
     let rec increase l p =
         match l with
         | hd :: tl -> 
@@ -43,6 +44,7 @@ let problem5 () =
                 increase tl (p * r)
             else increase tl p
         | [] -> p
+
     increase nums prod
 
 let problem6 () = 
@@ -1312,48 +1314,61 @@ let problem87 () =
                         if s1 + s2 + s3 < upperBound then nums.Add(s1 + s2 + s3) |> ignore
     nums.Count
 
-//A natural number, N, that can be written as the sum and product of a given set of at least two natural numbers, {a1, a2, … , ak} 
-//is called a product-sum number: N = a1 + a2 + … + ak = a1 x a2 x … x ak.
-//For example, 6 = 1 + 2 + 3 = 1 x 2 x 3.
-//For a given set of size, k, we shall call the smallest N with this property a minimal product-sum number. 
-//The minimal product-sum numbers for sets of size, k = 2, 3, 4, 5, and 6 are as follows.
-//k=2: 4 = 2 x 2 = 2 + 2
-//k=3: 6 = 1 x 2 x 3 = 1 + 2 + 3
-//k=4: 8 = 1 x 1 x 2 x 4 = 1 + 1 + 2 + 4
-//k=5: 8 = 1 x 1 x 2 x 2 x 2 = 1 + 1 + 2 + 2 + 2
-//k=6: 12 = 1 x 1 x 1 x 1 x 2 x 6 = 1 + 1 + 1 + 1 + 2 + 6
-//Hence for 2≤k≤6, the sum of all the minimal product-sum numbers is 4+6+8+12 = 30; note that 8 is only counted once in the sum.
-//In fact, as the complete set of minimal product-sum numbers for 2≤k≤12 is {4, 6, 8, 12, 15, 16}, the sum is 61.
-//What is the sum of all the minimal product-sum numbers for 2≤k≤12000?
+// 7587457
 let problem88 () =
     let k = 12000
     let upperBound = k * 2
-    let genFactors =
-        let rec loop factors prod acc = 
-            if prod >= upperBound then
-                if 2 * (Array.length factors + 1) > upperBound then acc
-                else
-                    let nextSmallestFactors = Array.create (Array.length factors + 1) 2
-                    loop nextSmallestFactors (2 * nextSmallestFactors.Length) (nextSmallestFactors :: acc)
+
+    let inc factors = 
+        let rec loop i = 
+            if i >= Array.length factors then None
             else
-                acc
-        //loop [| upperBound |] upperBound []
-        0
+                let nextFactor = factors.[i] + 1
+                for j in 0..i do
+                    factors.[j] <- nextFactor
+                let prod = factors |> Array.fold (fun acc n -> acc * n) 1
+                if prod <= upperBound then Some(factors)
+                else loop (i + 1)
+        loop 0
 
-    let foreach f factors =
-        let prod = factors |> Array.fold (fun acc n -> acc * n) 1
-        if prod <= upperBound then
-            f factors
+    let iterFactors f state = 
+        let rec loop state factors = 
+            let newState = f factors state
+            match inc factors with
+            | Some(e) -> loop newState e
+            | _ ->
+                if pow 2 (Array.length factors + 1) <= upperBound then
+                    Array.create (Array.length factors + 1) 2 |> loop newState
+                else
+                    newState
+        loop state [| 2; 2 |]
 
-            
-            
+    let checkFactors factors acc =
+        let prod = factors |> Array.fold (fun acc t -> acc * t) 1
+        let sum = factors |> Array.sum
+        if prod >= sum then
+            let k = prod - sum + Array.length factors
+            if Map.containsKey k acc = false || acc.[k] > prod then Map.add k prod acc
+            else acc
+        else acc
+
+    iterFactors checkFactors Map.empty |> Map.toList |> List.filter (fun (t, _) -> t <= k) |> List.map snd |> Set.ofList |> Set.fold (fun acc t -> acc + t) 0
+
+// 743
+let problem89 () = 
+    let impr (roman: String) = 
+        let s = roman.Replace("VIIII", "IX").Replace("IIII", "IV").Replace("LXXXX", "XC").Replace("XXXX", "XL").Replace("VXXX", "XC").Replace("DCCCC", "CM").Replace("CCCC", "CD")
+        roman.Length - s.Length
+    getLines "P89Input.txt" |> Array.map impr |> Array.sum
+
+let problem90 () =
     0
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem88 ()
+    let r = problem90 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
