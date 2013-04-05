@@ -296,7 +296,7 @@ let problem23 () =
 // 2783915460
 let problem24 () =
     let s = [ for x in 0..9 -> x.ToString() ]
-    let allPerutations = getPermutations s |> List.map (fun s -> s |> List.fold (fun acc i -> acc + i) "") |> List.sort
+    let allPerutations = permutationsOf s |> List.map (fun s -> s |> List.fold (fun acc i -> acc + i) "") |> List.sort
     List.nth allPerutations 999999
 
 // 4782
@@ -536,7 +536,7 @@ let problem43 () =
         loop (n |> List.tail) 0
     let digits = [ for i in 0L..9L -> i ]
     let allPerutations = 
-        getPermutations digits
+        permutationsOf digits
         |> List.filter (fun l -> l |> List.head <> 0L && isInterestingNumber l)
         |> List.map (fun l -> toNum64 l)
     allPerutations |> List.sum
@@ -623,7 +623,7 @@ let problem49 () =
         seq { for p in primes do
                 let permutations = 
                     getDigits p 
-                        |> getPermutations 
+                        |> permutationsOf 
                         |> List.map (fun n -> toNum n) 
                         |> List.filter (fun n -> n > p && primesSet.Contains n) 
                         |> (Seq.distinct >> Seq.sort >> Seq.toList)
@@ -879,7 +879,7 @@ let problem61 () =
 
     let mergeMany gs = gs |> List.tail |> List.fold (fun acc g -> merge acc g) gs.Head
 
-    getPermutations [ triangleNums; squareNums; pentagonalNums; hexagonalNums; heptagonalNums; octagonalNums ]
+    permutationsOf [ triangleNums; squareNums; pentagonalNums; hexagonalNums; heptagonalNums; octagonalNums ]
         |> List.map mergeMany
         |> List.collect (fun t -> t |> Map.toList)
         |> List.filter (fun (f, (t, c)) -> f = t)
@@ -986,7 +986,7 @@ let problem68 () =
             else false
         else false
                     
-    let sln = getPermutations [ 10; 9; 8; 7; 5; 4; 3; 2; 1 ] |> List.map (fun l -> 6 :: l |> List.toArray) |> List.filter validateSums |> List.max
+    let sln = permutationsOf [ 10; 9; 8; 7; 5; 4; 3; 2; 1 ] |> List.map (fun l -> 6 :: l |> List.toArray) |> List.filter validateSums |> List.max
     sprintf "%i%i%i%i%i%i%i%i%i%i%i%i%i%i%i" sln.[0]  sln.[5]  sln.[6] sln.[1] sln.[6] sln.[7] sln.[2] sln.[7] sln.[8] sln.[3] sln.[8] sln.[9] sln.[4] sln.[9] sln.[5]
 
 // 510510
@@ -1361,14 +1361,47 @@ let problem89 () =
         roman.Length - s.Length
     getLines "P89Input.txt" |> Array.map impr |> Array.sum
 
+// 1217
 let problem90 () =
-    0
+    let extend arr = 
+        let (has6, has9) = arr |> List.fold (fun (has6, has9) n -> (has6 || n = 6, has9 || n = 9)) (false, false)
+        if has6 && has9 = false then 9 :: arr
+        else if has9 && has6 = false then 6 :: arr
+        else arr
+
+    let getSquareNums n = 
+        let digits = getDigits (n * n)
+        if digits.Tail.IsEmpty then (0, digits.Head) else (digits.Head, digits.Tail.Head)
+    let squares = [ for n in 1..9 -> getSquareNums n ]
+    let arrangments = choose [ 0..9 ] 6
+    let extendedArrangments = arrangments |> List.map extend |> List.map Set.ofList
+    let isGood arr1 arr2 = 
+        let has d1 d2 = arr1 |> Set.contains d1 && arr2 |> Set.contains d2
+        squares |> List.forall (fun (d1, d2) -> (has d1 d2 || has d2 d1))
+
+    (seq { for a1 in extendedArrangments do
+            for a2 in extendedArrangments do
+                if isGood a1 a2 then yield 1 } |> Seq.length) / 2
+
+// 14234
+let problem91 () =
+    let n = 50
+    let origin = (0, 0)
+    let points = seq { for p in 0..n do
+                        for q in 0..n do
+                            if p <> 0 || q <> 0 then yield (p, q) } |> Seq.toList
+    let sideSquared (x1, y1) (x2, y2) = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)
+    (seq { for p in points do
+            for q in points do
+                if p <> q then
+                    let (aSq, bSq, cSq) = (sideSquared p origin, sideSquared q origin, sideSquared p q)
+                    if (aSq = bSq + cSq) || (bSq = aSq + cSq) || (cSq = aSq + bSq) then yield (p, q) } |> Seq.length) / 2
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem90 ()
+    let r = problem91 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())

@@ -172,7 +172,7 @@ let primeGenFastOld rangeTo =
                 primeBits.Set (pMult, false)
     [| for i in 2..rangeTo do if primeBits.Get i then yield i |]
 
-let rec getPermutations set = 
+let rec permutationsOf set = 
     let getSplits xs = 
         let rec loop before after =
             match after with
@@ -182,10 +182,21 @@ let rec getPermutations set =
     let extend el xs = getSplits xs |> List.map (fun (before, after) -> before @ [el] @ after)
     match set with
     | el :: nk :: tl ->
-        let rest = getPermutations (nk :: tl)
+        let rest = permutationsOf (nk :: tl)
         rest |> List.collect (fun s -> extend el s)
     | hd :: []       -> [ [ hd ] ]
     | []             -> []
+
+let rec choose set k = 
+    if k = 1 then [ for n in set -> [n] ]
+    else
+        let split xs = 
+            let rec loop xs acc =
+                match xs with
+                | hd :: nk :: tl  -> loop (nk :: tl) ((nk :: tl, hd) :: acc)
+                | _       -> acc
+            loop xs []
+        split set |> List.collect (fun (xs, x) -> choose xs (k - 1) |> List.map (fun t -> x :: t))
 
 let loadStrings fileName = 
     getLines fileName
