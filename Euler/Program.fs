@@ -1397,11 +1397,43 @@ let problem91 () =
                     let (aSq, bSq, cSq) = (sideSquared p origin, sideSquared q origin, sideSquared p q)
                     if (aSq = bSq + cSq) || (bSq = aSq + cSq) || (cSq = aSq + bSq) then yield (p, q) } |> Seq.length) / 2
 
+// 8581146
+let problem92 () = 
+    let rec next n = getDigits n |> List.map (fun n -> n * n) |> List.sum
+    let rec arrivesAt89 n = 
+        if n = 1 then false
+        else if n = 89 then true
+        else next n |> arrivesAt89
+    seq { for n in 1..9999999 do if arrivesAt89 n then yield 1 } |> Seq.length
+
+// 1258
+let problem93 () = 
+    let rec toFun op1 op2 op3 =
+        [ fun d1 d2 d3 d4 -> op3 (op2 (op1 d1 d2) d3) d4;
+          fun d1 d2 d3 d4 -> op3 (op1 d1 d2) (op2 d3 d4);
+          fun d1 d2 d3 d4 -> op3 (op2 d1 (op1 d2 d3)) d4;
+          fun d1 d2 d3 d4 -> op3 d1 (op2 (op1 d2 d3) d4);
+          fun d1 d2 d3 d4 -> op3 d1 (op2 d2 (op1 d3 d4)); ]
+    let binOps = [| (fun x y -> x + y); (fun x y -> x - y); (fun x y -> x * y); (fun x y -> if y <> 0.0 then x / y else Double.PositiveInfinity) |]
+    let operations = seq { for o1 in binOps do for o2 in binOps do for o3 in binOps do yield toFun o1 o2 o3 } |> Seq.concat |> Seq.toList
+    let getMax digits = 
+        let perms = permutationsOf digits
+        let allValues = 
+            seq { for op in operations do
+                    for d in perms do
+                        let t = op d.Head d.Tail.Head d.Tail.Tail.Head d.Tail.Tail.Tail.Head
+                        if t > 0.0 && t = float (int t) then yield int t } |> Set.ofSeq
+        (Seq.initInfinite (fun n -> n + 1) |> Seq.skipWhile (fun n -> allValues.Contains n) |> Seq.head) - 1
+    choose [0.0..9.0] 4 |> List.collect permutationsOf |> List.map (fun d -> (getMax d, d)) |> List.maxBy fst |> snd |> List.fold (fun acc n -> acc + ((int n).ToString())) ""
+
+let problem94 () =
+    0
+
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem91 ()
+    let r = problem94 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
