@@ -161,17 +161,6 @@ let primeGenFast rangeTo =
                 primeBits.Set ((pMult - 3) / 2, false)
     [| for i in -1..primeBits.Length - 1 do if i = -1 then yield 2 else if primeBits.Get i then yield (i * 2 + 3) |]
 
-let primeGenFastOld rangeTo =
-    let upperBound = int(Math.Sqrt (float(rangeTo))) + 1
-    let primeBits = new BitArray(rangeTo + 1, true)
-    primeBits.Set (0, false)
-    primeBits.Set (1, false)
-    for p in 2..upperBound do
-        if primeBits.Get p then
-            for pMult in p * 2..p..rangeTo do
-                primeBits.Set (pMult, false)
-    [| for i in 2..rangeTo do if primeBits.Get i then yield i |]
-
 let rec permutationsOf set = 
     let getSplits xs = 
         let rec loop before after =

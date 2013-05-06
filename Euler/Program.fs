@@ -1426,14 +1426,55 @@ let problem93 () =
         (Seq.initInfinite (fun n -> n + 1) |> Seq.skipWhile (fun n -> allValues.Contains n) |> Seq.head) - 1
     choose [0.0..9.0] 4 |> List.collect permutationsOf |> List.map (fun d -> (getMax d, d)) |> List.maxBy fst |> snd |> List.fold (fun acc n -> acc + ((int n).ToString())) ""
 
+// 518408346
 let problem94 () =
-    0
+    let n = 3
+    let (x1, y1) = (2, 1)
+    let nextSln xk yk = (x1 * xk + n * y1 * yk, x1 * yk + y1 * xk)
+    let allSln = 
+        let rec loop (xk, yk) = 
+            let a = ((2 * xk + 1) / 3, (2 * xk - 1) / 3)
+            if (fst a) * 3 > 1000000000 then []
+            else (xk, yk) :: loop (nextSln xk yk)
+        loop (x1, y1)
+    let isInt (f: float) = Math.Floor(f) = Math.Ceiling(f)
+    seq { for (x, y) in allSln.Tail do
+            let p a b area = if isInt a && isInt area then a * 2.0 + (a + b) else 0.0
+            yield 
+                p ((2.0 * float(x) + 1.0) / 3.0) 1.0 ((float x + 2.0) * float(y) / 3.0) +
+                p ((2.0 * float(x) - 1.0) / 3.0) -1.0 ((float x - 2.0) * float(y) / 3.0)
+            } |> Seq.sum
+
+// 14316
+let problem95 () = 
+    let primes = primeGenFast 1000000 |> Array.map int64
+    let chains = Array.init 1000000 (fun i -> if i = 0 then (1, 1) else (0, 0))
+
+    let minChainEl n = 
+        let rec loop n chain list =
+            if fst chains.[n - 1] > 0 then chains.[n - 1]
+            else 
+                let divSum = int(getProperDivisorsSum (int64 n) primes)
+                if divSum > 1000000 then (0, 0)
+                else if Set.contains divSum chain then
+                    let rec getMin list len minEl = 
+                        match list with
+                        | hd :: tl when hd = divSum -> (len, minEl)
+                        | hd :: tl -> getMin tl (len + 1) (min minEl hd)
+                        | _ -> raise (new Exception())
+                    let answer = getMin list 1 divSum
+                    for i in list do
+                        chains.[i - 1] <- answer
+                    answer
+                else loop divSum (chain.Add divSum) (divSum :: list)
+        (Set.ofList [ n ], [n]) ||> loop n
+    [ 1..1000000 ] |> List.map minChainEl |> List.sortBy (fun t -> - fst t) |> List.head |> snd
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem94 ()
+    let r = problem95 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
