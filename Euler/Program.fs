@@ -1470,11 +1470,136 @@ let problem95 () =
         (Set.ofList [ n ], [n]) ||> loop n
     [ 1..1000000 ] |> List.map minChainEl |> List.sortBy (fun t -> - fst t) |> List.head |> snd
 
+type PuzzleState = Valid | Solved | Broken | HasAnswer
+
+// 24702
+let problem96 () = 
+    let rec toPuzzles = function
+        | hd :: tl -> 
+            let puzzle = tl |> Seq.take 9 |> Seq.map (fun line -> line |> Seq.map toInt |> Seq.toArray) |> Seq.toArray
+            puzzle :: (tl |> Seq.skip 9 |> Seq.toList |> toPuzzles)
+        | _ -> []
+    let puzzles = getLines "P96Input.txt" |> Array.toList |> toPuzzles
+
+    let rowCells array row = seq { for i in 1..9 do yield Array.get (Array.get array (row - 1)) (i - 1) }
+    let colCells array col = seq { for i in 1..9 do yield Array.get (Array.get array (i - 1)) (col - 1) }
+
+    let rowVals puzzle i = rowCells puzzle i |> Seq.filter (fun el -> el > 0) |> Set.ofSeq
+    let colVals puzzle i = colCells puzzle i |> Seq.filter (fun el -> el > 0) |> Set.ofSeq
+    let self t = t
+    let collectUniqueVals cells = cells |> Seq.choose self |> Seq.collect self |> Seq.groupBy self |> Seq.map (fun (k, v) -> (k, v |> Seq.length)) |> Seq.filter (fun (k, v) -> v = 1) |> Seq.map fst |> Set.ofSeq
+
+    let valsForCube (puzzle: int[][]) i j = 
+        let (x, y) = ((i - 1) / 3, (j - 1) / 3)
+        seq { for i in 1 + x * 3..3 + x * 3 do 
+                for j in 1 + y * 3..3 + y * 3 do
+                    if puzzle.[i - 1].[j - 1] > 0 then yield puzzle.[i - 1].[j - 1] } |> Set.ofSeq
+
+    let movesForCell (puzzle: int[][]) row col =
+        if puzzle.[row - 1].[col - 1] > 0 then Some(Set.empty)
+        else 
+            let moves = Set.ofList [1..9] - (rowVals puzzle row) - (colVals puzzle col) - (valsForCube puzzle row col)
+            if moves.Count > 0 then Some(moves) else None
+
+    let movesFor (puzzle: int[][]) = 
+        let moves = Array.init 9 (fun row -> Array.init 9 (fun col -> movesForCell puzzle (row + 1) (col + 1)))
+        for row in 1..9 do
+            let uniqueVals = rowCells moves row |> collectUniqueVals
+            if uniqueVals.Count > 0 then
+                for col in 1..9 do
+                    if moves.[row - 1].[col - 1].IsSome then
+                        let intr = Set.intersect moves.[row - 1].[col - 1].Value uniqueVals
+                        if intr.Count = 1 then moves.[row - 1].[col - 1] <- Some(intr)
+        for col in 1..9 do
+            let uniqueVals = colCells moves col |> collectUniqueVals
+            if uniqueVals.Count > 0 then
+                for row in 1..9 do
+                    if moves.[row - 1].[col - 1].IsSome then
+                        let intr = Set.intersect moves.[row - 1].[col - 1].Value uniqueVals
+                        if intr.Count = 1 then moves.[row - 1].[col - 1] <- Some(intr)
+        moves
+
+    let eval moves = 
+        let mutable isValid = true
+        let mutable isSolved = true
+        for row in 0..8 do
+            for col in 0..8 do
+                match Array.get (Array.get moves row) col with
+                | Some(s) -> if Set.count s > 0 then isSolved <- false
+                | None -> isValid <- false
+                | _ -> ()
+        match (isValid, isSolved) with
+        | (false, _) -> Broken
+        | (_, true) -> Solved
+        | (_, _) -> 
+            if moves.[0].[0].Value.Count = 0 && moves.[0].[1].Value.Count = 0 && moves.[0].[2].Value.Count = 0 then HasAnswer
+            else Valid
+
+    let validate (puzzle: int[][]) = 
+        let mutable isValid = true
+        for row in 1..9 do
+            let cells = rowCells puzzle row |> Seq.filter (fun n -> n > 0)
+            if cells |> Set.ofSeq |> Set.count <> (cells |> Seq.length) then
+                isValid <- false
+        for col in 1..9 do
+            let cells = colCells puzzle col |> Seq.filter (fun n -> n > 0)
+            if cells |> Set.ofSeq |> Set.count <> (cells |> Seq.length) then
+                isValid <- false
+        isValid
+
+    let rec solve puzzle = 
+        let apply (puzzle: int[][]) moves = 
+            let mutable hasChanges = false
+            for row in 0..8 do
+                for col in 0..8 do
+                    match Array.get (Array.get moves row) col with
+                    | Some(s) when Set.count s = 1 -> 
+                        puzzle.[row].[col] <- s.MinimumElement
+                        hasChanges <- true
+                    | _ -> ()
+            hasChanges
+        if movesFor puzzle |> apply puzzle then solve puzzle else puzzle
+
+    let guess puzzle = 
+        let rec guesses puzzle = 
+            seq {
+                let simplified = solve puzzle
+                if validate simplified then
+                    let moves = movesFor simplified
+                    match eval moves with
+                    | Broken -> ()
+                    | Solved -> yield puzzle
+                    | _ ->
+                        let (row, col, values) = 
+                            seq { for row in 0..8 do
+                                    for col in 0..8 do
+                                        if moves.[row].[col].IsSome && moves.[row].[col].Value.Count = 2 then
+                                            yield (row, col, moves.[row].[col].Value) } |> Seq.head
+                        for v in values do
+                            let copy = Array.init 9 (fun row -> Array.get puzzle row |> Array.copy)
+                            copy.[row].[col] <- v
+                            yield! guesses copy }
+        guesses puzzle |> Seq.head
+
+    let isCompleted (puzzle: int[][]) = puzzle.[0].[0] > 0 && puzzle.[0].[1] > 0 && puzzle.[0].[2] > 0
+
+    let (solved, unsolved) = puzzles |> List.map (fun p -> solve p) |> List.partition isCompleted
+
+    List.concat [ solved; unsolved |> List.map guess ] |> List.map (fun p -> p.[0].[0] * 100 + p.[0].[1] * 10 + p.[0].[2]) |> List.sum
+
+// 8739992577
+let problem97 () = 
+    let s = (BigInteger.ModPow(bigint 2, bigint 7830457, bigint 100000000000L) * (bigint 28433) + bigint 1).ToString();
+    s.Substring(s.Length - 10)
+
+let problem98 () =
+    0
+
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem95 ()
+    let r = problem98 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
