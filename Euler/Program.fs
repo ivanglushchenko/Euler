@@ -1592,14 +1592,69 @@ let problem97 () =
     let s = (BigInteger.ModPow(bigint 2, bigint 7830457, bigint 100000000000L) * (bigint 28433) + bigint 1).ToString();
     s.Substring(s.Length - 10)
 
+// 18769
 let problem98 () =
-    0
+    let line = getLines "P98Input.txt" |> Seq.head
+    let words = line.Split ',' |> Seq.map (fun w -> w.Trim '"')
+    let toStr a = new String(a |> Seq.toArray)
+    let anagrams = 
+        words 
+        |> Seq.map (fun w -> (w |> Seq.sort |> toStr, w)) 
+        |> Seq.groupBy fst 
+        |> Seq.filter (fun (k, v) -> v |> Seq.length > 1) 
+        |> Seq.map (fun (k, v) -> v |> Seq.map snd |> Seq.toList) 
+        |> Seq.toList
+    let squares = [ for i in 1..1000 -> i * i ] |> Set.ofList
+    let digits = squares |> Seq.map getDigits |> Seq.toList
+
+    let toInt ints = Seq.fold (fun acc n -> acc * 10 + n) 0 ints
+
+    let maxSquareForSubst digits words =
+        let digitsMap = Seq.zip (List.head words) digits |> Map.ofSeq
+        let distinctDigits = Set.ofSeq digits
+        if digitsMap.Count = distinctDigits.Count then
+            let mappedWords = words |> List.map (fun word -> word |> Seq.map (fun c -> digitsMap.[c]))
+            if mappedWords |> Seq.forall (fun s -> Seq.head s > 0) then
+                let results = words |> List.map (fun word -> word |> Seq.map (fun c -> digitsMap.[c]) |> toInt)
+                let notSquares = results |> List.filter (fun n -> squares.Contains n = false)
+                if notSquares.Length = 0 then 
+                    Some(results |> Seq.sortBy (fun n -> -n) |> Seq.head)
+                else None
+            else
+                None
+        else
+            None
+
+    let maxSquare words = 
+        let possibleSubstitutions = digits |> List.filter (fun l -> List.head words |> String.length = List.length l)
+        let squares = possibleSubstitutions |> List.choose (fun d -> maxSquareForSubst d words) |> List.sortBy (fun n -> -n)
+        if squares.IsEmpty then 0 else squares.Head
+
+    anagrams |> List.map maxSquare |> List.sortBy (fun n -> -n) |> List.head
+
+// 709
+let problem99 () = 
+    getLines "P99Input.txt" 
+    |> Array.mapi (fun i s -> (i + 1, s.Split ','))
+    |> Array.map (fun (i, a) -> (i, float(toInt a.[0]), float(toInt a.[1])))
+    |> Array.map (fun (i, x, y) -> (i, y * Math.Log10(x)))
+    |> Array.sortBy (fun (i, v) -> -v)
+    |> Seq.head
+    |> fst
+
+// 756872327473
+let problem100 () =
+    let next (b, n) = (3L * b + 2L * n - 2L, 4L * b + 3L * n - 3L)
+    let rec loop (b, n) = 
+        if n > 1000000000000L then b
+        else next (b, n) |> loop 
+    loop (15L, 21L)
 
 [<EntryPoint>]
 [<System.STAThread>]
 let main argv =
     swStart ()
-    let r = problem98 ()
+    let r = problem100 ()
     let t = swStop ()
     printfn "%s in %ims" (r.ToString()) t
     System.Windows.Clipboard.SetText (r.ToString())
