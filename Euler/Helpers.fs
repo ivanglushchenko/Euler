@@ -9,31 +9,20 @@ let swStop () =
     stopwatch.Stop()
     stopwatch.ElapsedMilliseconds
 
-let getNextPrimesRange rangeFrom rangeTo primes =
-    let (rangeFrom, primes) = if rangeFrom < 3L then (3L, [ 2L ]) else ((if rangeFrom % 2L = 0L then rangeFrom + 1L else rangeFrom), primes)
-    let candidates = 
-        [|  for x in rangeFrom..2L..(rangeTo) do
-                if primes |> List.forall (fun prime -> x % prime <> 0L) then yield x |]
-    let rec sieve all primes =
-        if Array.isEmpty all then primes
-        else 
-            let nextPrime = all.[0]
-            sieve (all |> Array.filter (fun n -> n % nextPrime <> 0L)) (nextPrime :: primes)
-    sieve candidates primes
-
-let getPrimes target f =
-    getNextPrimesRange 3L target [2L] |> List.filter f
-
-let getAllPrimes target = getPrimes target (fun n -> true)
+let genPrimes rangeTo =
+    let upperBound = int(Math.Sqrt (float(rangeTo))) + 1
+    let primeBits = new BitArray(rangeTo / 2 - 1, true)
+    for p in 3..2..upperBound do
+        if primeBits.Get ((p - 3) / 2) then
+            for pMult in (p * 3)..(2 * p)..rangeTo do
+                let i = (pMult - 3) / 2
+                primeBits.Set ((pMult - 3) / 2, false)
+    [| for i in -1..primeBits.Length - 1 do if i = -1 then yield 2 else if primeBits.Get i then yield (i * 2 + 3) |]
 
 let rec inline gcd (a: ^a) (b: ^a) : ^a = 
     let zero: ^a = LanguagePrimitives.GenericZero
     let rec compute (a: ^a) (b: ^a) = if b = zero then abs a else compute b ((a % b): ^a)
     compute a b
-
-let getFactors target =
-    let targetsr = int64(sqrt (float target))
-    getPrimes targetsr (fun n -> target % (int64(n)) = 0L)
 
 let toInt c = System.Int32.Parse(c.ToString())
 
@@ -101,23 +90,6 @@ let getDigits64 n =
         else loop d (r :: acc)
     loop n []
 
-let loadPrimes () =
-    if System.IO.File.Exists "primes.txt" then
-        System.IO.File.ReadAllLines("primes.txt") |> Array.map (fun l -> System.Int64.Parse l)
-    else
-        [| 2L |]
-
-let calcPrimes nextNPrimes =
-    let existingPrimes = loadPrimes () |> Array.sortBy (fun t -> -t) |> Array.toList
-    let maxPrime = existingPrimes |> List.max
-    let morePrimes = getNextPrimesRange maxPrime (maxPrime + nextNPrimes) existingPrimes |> List.sort
-
-    use sw = new System.IO.StreamWriter("primes.txt", false)
-    for p in morePrimes do
-        sw.WriteLine p
-    sw.Flush()
-    sw.Close()
-
 let toNum xs = xs |> List.mapi (fun i t -> (xs.Length - i - 1, t)) |> List.fold (fun acc (i, t) -> acc + (pow 10 (i)) * t) 0
 
 let toNum64 xs = xs |> List.mapi (fun i t -> (xs.Length - i - 1, t)) |> List.fold (fun acc (i, t) -> acc + (pow64 10L (int64(i))) * t) 0L
@@ -150,16 +122,6 @@ let isPanDig r =
         s.Count = 9 && (s.Contains 0L = false)
 
 let isPanDig3 x y z = combineDigits x y |> combineDigits z |> isPanDig
-
-let primeGenFast rangeTo =
-    let upperBound = int(Math.Sqrt (float(rangeTo))) + 1
-    let primeBits = new BitArray(rangeTo / 2 - 1, true)
-    for p in 3..2..upperBound do
-        if primeBits.Get ((p - 3) / 2) then
-            for pMult in (p * 3)..(2 * p)..rangeTo do
-                let i = (pMult - 3) / 2
-                primeBits.Set ((pMult - 3) / 2, false)
-    [| for i in -1..primeBits.Length - 1 do if i = -1 then yield 2 else if primeBits.Get i then yield (i * 2 + 3) |]
 
 let rec permutationsOf set = 
     let getSplits xs = 

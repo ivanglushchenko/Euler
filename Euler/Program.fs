@@ -13,7 +13,8 @@ let problem2 () =
     fib 1 2 |> Seq.takeWhile (fun f -> f < 4000000) |> Seq.filter (fun f -> f % 2 = 0) |> Seq.sum
 
 let problem3 () =
-    600851475143L |> getFactors |> List.max
+    let target = 600851475143L
+    sqrt (float target) |> int |> genPrimes |> Array.filter (fun n -> target % (int64(n)) = 0L) |> Array.max
 
 let problem4 () = 
     let isPoly x = 
@@ -31,14 +32,13 @@ let problem4 () =
     allProducts |> Array.max
 
 let problem5 () = 
-    let nums = [ 1L..20L ]
-    let primes = getAllPrimes 20L
-    let prod = primes |> List.fold (fun acc p -> acc * p) 1L
+    let nums = [ 1..20 ]
+    let prod = genPrimes 20 |> Array.fold (fun acc p -> acc * p) 1
 
     let rec increase l p =
         match l with
         | hd :: tl -> 
-            if p % hd <> 0L then
+            if p % hd <> 0 then
                 let t = gcd p hd
                 let r = hd / t
                 increase tl (p * r)
@@ -71,7 +71,7 @@ let problem7 () =
 // 40824
 let problem8 () =
     let s = "7316717653133062491922511967442657474235534919493496983520312774506326239578318016984801869478851843858615607891129494954595017379583319528532088055111254069874715852386305071569329096329522744304355766896648950445244523161731856403098711121722383113622298934233803081353362766142828064444866452387493035890729629049156044077239071381051585930796086670172427121883998797908792274921901699720888093776657273330010533678812202354218097512545405947522435258490771167055601360483958644670632441572215539753697817977846174064955149290862569321978468622482839722413756570560574902614079729686524145351004748216637048440319989000889524345065854122758866688116427171479924442928230863465674813919123162824586178664583591245665294765456828489128831426076900422421902267105562632111110937054421750694165896040807198403850962455444362981230987879927244284909188845801561660979191338754992005240636899125607176060588611646710940507754100225698315520005593572972571636269561882670428252483600823257530420752963450"
-    let ints = s |> Seq.map (fun c -> System.Convert.ToInt32 (c.ToString())) |> Seq.toList
+    let ints = s |> Seq.map toInt |> Seq.toList
     let rec getMax l m =
         match l with
         | i1 :: i2 :: i3 :: i4 :: i5 :: tl -> 
@@ -92,8 +92,7 @@ let problem9 () =
     0
 
 let problem10 () = 
-    let primes = getAllPrimes 2000000L
-    primes |> List.fold (fun acc t -> acc + int64(t)) 0L
+    genPrimes 2000000 |> Array.map int64 |> Array.fold (fun acc t -> acc + int64(t)) 0L
 
 // 70600674
 let problem11 () =
@@ -126,7 +125,7 @@ let problem11 () =
 
 // explanation for the math: http://code.jasonbhill.com/sage/project-euler-problem-12/
 let problem12 () = 
-    let primes = loadPrimes ()
+    let primes = genPrimes 100000 |> Array.map int64
     let getFactorsSum n =
         if n = 1L then 2L
         else
@@ -270,7 +269,7 @@ let problem20 () =
 
 let problem21 () = 
     let limit = 10000L
-    let primes = getAllPrimes limit |> List.rev |> List.toArray
+    let primes = limit |> int |> genPrimes |> Array.map int64
     let map = [ for x in 1L..limit - 1L -> (x, getProperDivisorsSum x primes) ] |> Map.ofList
     let amicableNumbers = map |> Map.toSeq |> Seq.filter (fun (x, y) -> x <> y && map.ContainsKey y && map.[y] = x)
     (amicableNumbers |> Seq.map (fun (x, y) -> x + y) |> Seq.sum) / 2L
@@ -282,7 +281,7 @@ let problem22 () =
 // 4179871
 let problem23 () =
     let upperLimit = 29123L
-    let primes = getAllPrimes upperLimit |> List.rev |> List.toArray
+    let primes = upperLimit |> int |> genPrimes |> Array.map int64
     let divs = [ for x in 1L..upperLimit -> (x, getProperDivisorsSum x primes) ]
     let divsMap = divs |> Map.ofList
     let abudantNumbers = divs |> List.filter (fun (k, v) -> v > k) |> List.map fst |> Set.ofList
@@ -324,18 +323,18 @@ let problem26 () =
 // -59231
 let problem27 () =
     let f n a b = n * n + a * n + b
-    let primes = getAllPrimes 10000L 
-    let primesSet = primes |> Set.ofList
-    let choicesForB = [ for x in primes |> List.filter (fun p -> p < 1000L) -> [ x; -x ] ] |> List.concat
+    let primes = genPrimes 10000
+    let primesSet = primes |> Set.ofArray
+    let choicesForB = [ for x in primes |> Array.filter (fun p -> p < 1000) -> [ x; -x ] ] |> List.concat
     let coefs =
-        seq { for a in -999L..999L do
+        seq { for a in -999..999 do
                 for b in choicesForB do yield (a, b) }
     let getMaxNumOfPrimes (a, b) =
         let rec loop i =
             let p = f i a b
-            if primesSet.Contains p then loop (i + 1L)
+            if primesSet.Contains p then loop (i + 1)
             else i
-        loop 0L
+        loop 0
     let (a, b) = coefs |> Seq.map (fun t -> (getMaxNumOfPrimes t, t)) |> Seq.maxBy fst |> snd
     a * b
 
@@ -429,7 +428,7 @@ let problem34 () =
     
 // 55
 let problem35 () =
-    let primes = loadPrimes () |> Array.filter (fun p -> p < 1000000L)
+    let primes = genPrimes 1000000 |> Array.map int64
     let primesMap = primes |> Set.ofArray
     let isCircular p = 
         let digits = getDigits64 p
@@ -464,7 +463,7 @@ let problem36 () =
   
 // 748317  
 let problem37 () =
-    let primes = loadPrimes () |> Array.filter (fun p -> p < 1000000L)
+    let primes = genPrimes 1000000 |> Array.map int64
     let primesMap = primes |> Set.ofArray
     let isPrimeTruncatable p =
         if p < 10L then false
@@ -509,7 +508,7 @@ let problem40 () =
 
 // 7652413
 let problem41 () =
-    let primes = primeGenFast 10000000 |> Set.ofArray
+    let primes = genPrimes 10000000 |> Set.ofArray
     seq { for i in 1234567..7654321 do
             if primes.Contains i && isPanDig3 (int64(i)) 8L 9L then yield i } |> Seq.max
 
@@ -524,7 +523,7 @@ let problem42 () =
 
 // 16695334890
 let problem43 () =
-    let primes = primeGenFast 100 |> Array.mapi (fun i p -> (i, int64(p))) |> Map.ofArray
+    let primes = genPrimes 100 |> Array.mapi (fun i p -> (i, int64(p))) |> Map.ofArray
     let rec isInterestingNumber n =
         let rec loop n i = 
             match n with
@@ -580,14 +579,14 @@ let problem45 () =
 // 5777
 let problem46 () = 
     let twiceSquares = seq { for i in 1..1000 -> 2 * i * i } |> Set.ofSeq
-    let primes = primeGenFast 1000000 |> Set.ofArray
+    let primes = genPrimes 1000000 |> Set.ofArray
     let isComposable n = twiceSquares |> Set.exists (fun sq -> primes.Contains (n - sq))
     let compositeNums = Seq.initInfinite (fun i -> i * 2 + 3) |> Seq.filter (fun n -> primes.Contains n = false && isComposable n = false)
     compositeNums |> Seq.head
 
 // 134043
 let problem47 () =
-    let primes = primeGenFast 1000000 |> Array.map (fun p -> int64(p))
+    let primes = genPrimes 1000000 |> Array.map (fun p -> int64(p))
     let nums = Seq.initInfinite (fun i -> getPrimeDivisors (int64(i) + 2L) primes |> List.length) |> Seq.take 1000000 |> Seq.toList
     let rec getDistinct i nums = 
         match nums with
@@ -605,7 +604,7 @@ let problem48 () =
 
 // 296962999629
 let problem49 () =
-    let primes = primeGenFast 9999 |> Array.filter (fun p -> p > 1000)
+    let primes = genPrimes 9999 |> Array.filter (fun p -> p > 1000)
     let primesSet = primes |> Set.ofArray
     let getEquallyIncreasingSubList ps =
         if ps |> List.length < 3 then []
@@ -633,7 +632,7 @@ let problem49 () =
 
 // 997651
 let problem50 () = 
-    let primes = primeGenFast 999999
+    let primes = genPrimes 999999
     let primesSums = 
         primes 
         |> Array.fold (fun acc t -> ((if acc.IsEmpty then 0L else acc.Head) + int64(t)) :: acc) [] 
@@ -648,7 +647,7 @@ let problem50 () =
 
 // 121313
 let problem51 () =
-    let primes = primeGenFast 999999 |> Array.filter (fun p -> p >= 100000)
+    let primes = genPrimes 999999 |> Array.filter (fun p -> p >= 100000)
     let primesSet = primes |> Set.ofSeq
     let rec getMasks d n = 
         let updMask xs i =
@@ -820,7 +819,7 @@ let problem57 () =
 
 // 26241
 let problem58 () =
-    let primes = primeGenFast 100000
+    let primes = genPrimes 100000
     let upperRight  n = (2 * n + 1) * (2 * n + 1) - 6 * n
     let upperLeft   n = (2 * n + 1) * (2 * n + 1) - 4 * n
     let lowerLeft   n = (2 * n + 1) * (2 * n + 1) - 2 * n
@@ -848,7 +847,7 @@ let problem59 () =
 // 26033
 let problem60 () =
     let upperBound = 20000
-    let primes = primeGenFast 10000000 |> Array.map (fun p -> int64 p)
+    let primes = genPrimes 10000000 |> Array.map (fun p -> int64 p)
     let primesSet = primes |> Set.ofArray
     let maxKnownPrime = primes |> Array.max
     let prime p = if p < maxKnownPrime then primesSet.Contains p else isPrime64 primes p
@@ -992,7 +991,7 @@ let problem68 () =
 // 510510
 let problem69 () =
     let upperBound = 1000000
-    let primes = primeGenFast 1000 |> List.ofArray
+    let primes = genPrimes 1000 |> List.ofArray
     let rec increaseProduct num prod primes =
         let nextPrime = primes |> List.head
         let nextNum = num * nextPrime
@@ -1003,7 +1002,7 @@ let problem69 () =
 // 8319823
 let problem70 () =
     let upperBound = 10000000
-    let primes = primeGenFast 10000
+    let primes = genPrimes 10000
     let getPhi p1 p2 = (p1 - 1) * (p2 - 1)
     let digitsOf d = d.ToString() |> Seq.groupBy (fun c -> c) |> Seq.map (fun (k, v) -> (k, v |> Seq.length)) |> Seq.sort |> Seq.toList
     seq { for p1 in primes do
@@ -1033,7 +1032,7 @@ let problem71 () =
 
 // 303963552391
 let problem72 () =
-    let primes = primeGenFast 1000000 |> Array.map (fun p -> int64 p)
+    let primes = genPrimes 1000000 |> Array.map (fun p -> int64 p)
     seq { for n in 2L..1000000L -> getPrimeDivisors n primes 
                                     |> List.map fst
                                     |> List.fold (fun acc p -> acc * (1.0 - 1.0 / (float p))) (float n)
@@ -1104,7 +1103,7 @@ let problem76 () =
 
 // 71
 let problem77 () =
-    let primes = primeGenFast 5000 |> List.ofArray
+    let primes = genPrimes 5000 |> List.ofArray
     let getMaxSolution sum = 
         let solutions = [| for i in 0..sum -> if i = 0 then 1 else 0 |]
         let rec processNextCoin coins =
@@ -1301,7 +1300,7 @@ let problem86 () =
 // 1097343
 let problem87 () =
     let upperBound = 50000000L
-    let primes = primeGenFast 10000 |> Array.map int64
+    let primes = genPrimes 10000 |> Array.map int64
     let squares = primes |> Array.map (fun n -> n * n)
     let cubes = primes |> Array.map (fun n -> n * n * n) |> Array.filter (fun n -> n < upperBound)
     let fourths = primes |> Array.map (fun n -> n * n * n * n) |> Array.filter (fun n -> n < upperBound)
@@ -1447,7 +1446,7 @@ let problem94 () =
 
 // 14316
 let problem95 () = 
-    let primes = primeGenFast 1000000 |> Array.map int64
+    let primes = genPrimes 1000000 |> Array.map int64
     let chains = Array.init 1000000 (fun i -> if i = 0 then (1, 1) else (0, 0))
 
     let minChainEl n = 
